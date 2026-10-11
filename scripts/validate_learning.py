@@ -18,6 +18,8 @@ SCHEDULE_COLUMNS = (
 LOG_COLUMNS = ('Date', 'New', 'Reviews', 'Correct', 'Uncertain', 'Incorrect', 'Notable errors', 'Next due')
 STREAK_COLUMNS = ('Current streak', 'Best streak', 'Last completed')
 PATTERN_COLUMNS = ('Pattern', 'Count', 'Last seen', 'Example', 'Recent sentences')
+CATEGORY_COLUMNS = ('Category', 'Description')
+CATEGORY_NAME = re.compile(r'[a-z]+(-[a-z]+)*')
 INTERVALS = (1, 3, 7, 14, 30, 60)
 RESULTS = ('correct', 'incorrect', 'uncertain')
 
@@ -167,6 +169,7 @@ def load_data(root):
         'logs': read_rows(root / 'logs/daily_log.md', LOG_COLUMNS),
         'streak': read_rows(root / 'data/streak.md', STREAK_COLUMNS),
         'patterns': read_rows(root / 'data/weak_patterns.md', PATTERN_COLUMNS),
+        'categories': read_rows(root / 'data/pattern_categories.md', CATEGORY_COLUMNS),
     }
 
 
@@ -236,8 +239,14 @@ def validate(data, today, require_complete=False, allow_stale_streak=False):
         elif id_date(parent, 'S') >= id_date(child, 'S'):
             errors.append(f'{child}: related sentence must come from an earlier day')
         link_ids.add(child)
+    categories = unique(data['categories'], 'Category', 'pattern categories', errors)
+    for name in categories:
+        if not CATEGORY_NAME.fullmatch(name):
+            errors.append(f'pattern category {name}: use lowercase words joined by hyphens')
     unique(data['patterns'], 'Pattern', 'weak patterns', errors)
     for pattern in data['patterns']:
+        if pattern['Pattern'] not in categories:
+            errors.append(f"weak pattern {pattern['Pattern']}: not in data/pattern_categories.md")
         recent = [] if pattern['Recent sentences'] == '-' else [item.strip() for item in pattern['Recent sentences'].split(',')]
         last_seen = date.fromisoformat(pattern['Last seen'])
         if integer(pattern['Count']) < max(1, len(recent)) or len(recent) > 5 or len(set(recent)) != len(recent):

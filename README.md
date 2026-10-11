@@ -35,29 +35,31 @@ Python 3.9+ is required for automated checks; there are no third-party dependenc
 python -B scripts/validate_learning.py --date 2026-10-11
 python -B scripts/validate_learning.py --date 2026-10-11 --require-complete
 python -B scripts/validate_learning.py --date 2026-10-11 --report
-python -B -m unittest discover -s scripts -p "test_validate_learning.py" -v
+python -B scripts/learning_records.py status --date 2026-10-11
+python -B -m unittest discover -s scripts -p "test_*.py" -v
 ```
+
+The agent writes learning data only through `scripts/learning_records.py` (`refresh-streak`, `record`, `add-category`, `complete`). It accepts only the next planned question, appends the attempt, rebuilds the schedule row from actual attempts, updates weak patterns, logs completion once, and rebuilds the streak. Every write is validated before and after; on failure all touched files are restored.
 
 Replace the example date with the learner's local date. The validator checks IDs, actual attempts, projected schedule counts/levels, plans, links, completion totals, and streak without writing data. It runs before/after preparation, after each saved assessment, and before/after completion. It checks structure and consistency, not whether an English assessment is linguistically correct. Test fixtures are isolated from learning history.
 
-Use `/english-progress` in Copilot, or ask Codex/Copilot to use `english-coach` to report weekly progress. Reports compare the last 7 days with the preceding 7 days, separate new and review results with denominators, show backlog, and explain evidence limits. Reports are read-only and do not create files. No review attempts means unknown recall, not a 0% recall score.
+Use `/english-progress` in Copilot or `$english-progress` in Codex to report weekly progress. Reports compare the last 7 days with the preceding 7 days, separate new and review results with denominators, show backlog, and explain evidence limits. Reports are read-only and do not create files. No review attempts means unknown recall, not a 0% recall score.
 
-The two Copilot prompt files and the two thin Codex entry-point Skills (`.agents/skills/start-english`, `.agents/skills/english-progress`) only select a shared workflow; they do not duplicate its rules. Codex does not read `.github/prompts/`, so the entry-point Skills (explicit invocation only) replace the prompt files there. `$english-coach` still works directly. Automated checks are explicit workflow commands, not host-specific enforced hooks. Passing the script tests establishes local data/CLI compatibility, not proof that either AI host will obey every instruction in a complete session.
+The two thin entry-point Skills (`.agents/skills/start-english`, `.agents/skills/english-progress`) only select the shared workflow; they do not duplicate its rules. Both hosts read them from `.agents/skills/`, so they provide `/...` commands in Copilot and `$...` commands in Codex; there are no separate Copilot prompt files. `$english-coach` still works directly. Automated checks are explicit workflow commands, not host-specific enforced hooks. Passing the script tests establishes local data/CLI compatibility, not proof that either AI host will obey every instruction in a complete session.
 
 ## Data structure
 
 - `data/learner_profile.md`: your level, goals, and preferred topics.
 - `data/review_schedule.md`: one table row per sentence with its current level (0–5) and next review date; due items stay at the top.
-- `data/weak_patterns.md`: one table row per observed error pattern.
+- `data/weak_patterns.md`: one table row per observed error category, with a count.
+- `data/pattern_categories.md`: the fixed list of error categories that `--pattern` accepts.
 - `data/sentences/YYYY-MM.md`: one row per sentence (Vietnamese, standard version, structures, topic).
 - `data/history/YYYY-MM.md`: append-only, one row per assessed answer (including your first answer).
 - `data/history/lessons/YYYY-MM-DD.md`: a saved daily question plan, with no answers or assessment results.
 - `logs/daily_log.md`: one row per completed learning session.
 - `data/streak.md`: current and best streaks of consecutive completed learning days, shown at the end of each session. Each day counts once; incomplete sessions do not count.
 - `.agents/skills/english-coach/SKILL.md`: the assistant workflow (single source of truth for the rules).
-- `.github/prompts/start-english.prompt.md`: the `/start-english` prompt.
-- `.github/prompts/english-progress.prompt.md`: the `/english-progress` read-only report prompt.
-- `.agents/skills/start-english/` and `.agents/skills/english-progress/`: Codex entry points (`$start-english`, `$english-progress`) that delegate to `english-coach`.
+- `.agents/skills/start-english/` and `.agents/skills/english-progress/`: entry points for both hosts (`/start-english`, `/english-progress` in Copilot; `$start-english`, `$english-progress` in Codex) that delegate to `english-coach`.
 
 Learning data is stored only in the Markdown records above and versioned with git; each completed session is committed locally.
 

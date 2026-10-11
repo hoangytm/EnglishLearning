@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 from validate_learning import (
-    ATTEMPT_COLUMNS, DataError, LINK_COLUMNS, LOG_COLUMNS, PATTERN_COLUMNS,
+    ATTEMPT_COLUMNS, CATEGORY_COLUMNS, DataError, LINK_COLUMNS, LOG_COLUMNS, PATTERN_COLUMNS,
     PLAN_COLUMNS, SCHEDULE_COLUMNS, SENTENCE_COLUMNS, STREAK_COLUMNS,
     load_data, progress_report, project_schedule, read_tables, review_candidates, streak_snapshot, validate,
 )
@@ -30,6 +30,8 @@ def sample_data():
         schedule.append(dict(project_schedule([attempt]), **{'Sentence ID': identifier}))
         questions.append(dict(zip(PLAN_COLUMNS, (str(number), 'new', identifier, f'Question {number}'))))
     return {'sentence_rows': sentences, 'attempts': attempts, 'schedule': schedule, 'links': [], 'patterns': [],
+            'categories': [{'Category': name, 'Description': f'Description of {name}.'}
+                           for name in ('tense-aspect', 'time-preposition', 'word-choice')],
             'plans': {TODAY: {'Lesson date': str(TODAY), 'New target': '7', 'Review target': '0',
                              'Unavailable reviews': '10', 'rows': questions}},
             'logs': [{'Date': str(TODAY), 'New': '7', 'Reviews': '0', 'Correct': '0', 'Incorrect': '6',
@@ -54,6 +56,7 @@ def write_fixture(root, data):
     write_table(root / 'logs/daily_log.md', LOG_COLUMNS, data['logs'])
     write_table(root / 'data/streak.md', STREAK_COLUMNS, data['streak'])
     write_table(root / 'data/weak_patterns.md', PATTERN_COLUMNS, data['patterns'])
+    write_table(root / 'data/pattern_categories.md', CATEGORY_COLUMNS, data['categories'])
     for lesson_date, plan in data['plans'].items():
         prefix = f'# Lesson {lesson_date}\n\n'
         prefix += ''.join(f'- {field}: {value}\n' for field, value in plan.items() if field != 'rows')
@@ -66,6 +69,18 @@ class LearningValidationTests(unittest.TestCase):
 
     def test_valid_fixture_is_consistent(self):
         self.assertEqual([], validate(self.data, TODAY)[0])
+
+    def test_weak_pattern_must_be_a_known_category(self):
+        self.data['patterns'] = [{'Pattern': 'Tense', 'Count': '1', 'Last seen': str(TODAY),
+                                  'Example': 'Answer.', 'Recent sentences': 'S-20261011-001'}]
+        self.assertTrue(any('not in data/pattern_categories.md' in error for error in validate(self.data, TODAY)[0]))
+        self.data['patterns'][0]['Pattern'] = 'tense-aspect'
+        self.assertEqual([], validate(self.data, TODAY)[0])
+        self.data['categories'].append({'Category': 'Bad Name', 'Description': 'x'})
+        self.data['categories'].append(dict(self.data['categories'][0]))
+        errors = validate(self.data, TODAY)[0]
+        self.assertTrue(any('lowercase words' in error for error in errors))
+        self.assertTrue(any('duplicate tense-aspect' in error for error in errors))
 
     def test_duplicate_attempt_and_repeated_sentence(self):
         self.data['attempts'].append(deepcopy(self.data['attempts'][0]))
@@ -225,11 +240,12 @@ class LearningValidationTests(unittest.TestCase):
         self.assertIn('$english-coach english-progress', instructions)
         self.assertIn('## Portable runtime', skill)
         for name in ('start-english', 'english-progress'):
-            prompt = (ROOT / f'.github/prompts/{name}.prompt.md').read_text(encoding='utf-8')
-            self.assertIn(f'Request: `{name}`.', prompt)
-            self.assertIn(skill_path, prompt)
-            self.assertIn('in full', prompt)
-            self.assertIn('agent: agent', prompt)
+            entry = (ROOT / f'.agents/skills/{name}/SKILL.md').read_text(encoding='utf-8')
+            self.assertIn(f'name: {name}', entry)
+            self.assertIn(f'Request: `{name}`.', entry)
+            self.assertIn(skill_path, entry)
+            self.assertIn('in full', entry)
+        self.assertFalse((ROOT / '.github/prompts').exists())
 
     def test_link_table_roundtrip_and_outside_plan_answer(self):
         with tempfile.TemporaryDirectory() as directory:

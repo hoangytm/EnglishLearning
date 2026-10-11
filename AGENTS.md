@@ -19,7 +19,7 @@ The session flow, resume check, grading, spaced-repetition levels, and data-upda
 
 - Both Codex and GitHub Copilot use this root `AGENTS.md` and the same `.agents/skills/english-coach/SKILL.md`. For a learning or progress request, read that Skill file in full even if the host has not automatically discovered or activated it.
 - `start-english` means start or resume the learning workflow. `english-progress` means the read-only progress workflow, not translation practice. Recognise these plain-text requests in either host; merely discussing or editing these commands does not start a session.
-- Copilot in VS Code provides `/start-english` and `/english-progress` through `.github/prompts/`. Codex uses `$start-english` or `$english-progress` (thin Skills in `.agents/skills/` that delegate to `english-coach`); `$english-coach start-english` and `$english-coach english-progress` also work. Do not assume Copilot prompt files register Codex slash commands.
+- The thin Skills `.agents/skills/start-english` and `.agents/skills/english-progress` delegate to `english-coach` and are the entry points in both hosts: `/start-english` and `/english-progress` in Copilot, `$start-english` and `$english-progress` in Codex. `$english-coach start-english` and `$english-coach english-progress` also work.
 - Use the current host's native file-reading, editing, and terminal tools. Resolve all workspace-relative paths from the folder containing this file, not from the Skill folder or an unrelated current directory. Follow the Skill's portable-runtime rules.
 - Only one agent may write learning data at a time. When changing hosts, reread the saved plan and actual assessed history before continuing; do not generate a parallel lesson or infer unsaved answers from another host's chat.
 
@@ -30,5 +30,6 @@ The session flow, resume check, grading, spaced-repetition levels, and data-upda
 - Never delete or overwrite history: monthly attempt files in `data/history/` are append-only; daily question plans in `data/history/lessons/` and existing rows in `data/sentences/` are immutable. Only `review_schedule.md` rows, `weak_patterns.md` rows, `learner_profile.md` fields, and the `streak.md` snapshot are updated in place.
 - A generated lesson plan is not learning history: save questions without answers or hints, and record study results only after a real learner response has been assessed.
 - Run the Skill's read-only validator at its required checkpoints. Report failures honestly; never modify immutable history or invent results to make validation pass.
+- Write learning records only through `scripts/learning_records.py`; do not hand-edit history, sentence bank, schedule, weak patterns, log, or streak files.
 - Seeing an answer does not count as knowing it.
 - Use UTF-8 Markdown and keep every existing ID unique and unchanged.

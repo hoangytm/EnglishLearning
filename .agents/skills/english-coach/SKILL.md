@@ -9,7 +9,7 @@ Use this skill for daily English-learning sessions, Vietnamese-to-English transl
 
 ## Portable runtime
 
-- This is the shared workflow for Codex and GitHub Copilot, not a host-specific agent. `start-english` selects learning; `english-progress` selects read-only reporting. Host prompt files are optional entry points, not additional workflow rules.
+- This is the shared workflow for Codex and GitHub Copilot, not a host-specific agent. `start-english` selects learning; `english-progress` selects read-only reporting. The `start-english` and `english-progress` entry-point Skills only select a workflow; they add no rules.
 - Locate the workspace root containing `AGENTS.md` and `scripts/validate_learning.py`. Paths in this Skill are relative to that root. Use native tools available in the host, not a hard-coded Copilot or Codex tool API. Writing learning records requires workspace write permission; validation requires permission to execute Python. If the host blocks an operation, explain what permission is missing and stop that operation. Do not bypass sandbox restrictions, request secrets through chat, or claim a blocked operation succeeded.
 - Select one available Python 3.9+ launcher and use it consistently for every command in this workflow: `python` or `py -3` on Windows, `python3` or `python` on Linux/macOS/WSL. Check its version first. A launcher that exists but is too old does not qualify; try another available launcher before reporting Python unavailable. The command examples below use `python` as a placeholder for the selected launcher.
 - Run from the workspace root when possible. Otherwise, pass the quoted absolute script path and `--root` pointing to the same workspace, for example `<launcher> -B "<workspace>/scripts/validate_learning.py" --root "<workspace>" --date YYYY-MM-DD`. The script's default root is its own workspace, not the terminal's current directory. Quote paths containing spaces and use syntax appropriate to the active shell; do not assume PowerShell, Bash, or a Windows drive path.
@@ -22,20 +22,22 @@ Learning records are Markdown tables, one row per record. Dates are encoded in I
 
 - `data/learner_profile.md`: level, goals, preferred topics. Only record what the learner states; leave `not set` otherwise.
 - `data/review_schedule.md`: one row per sentence, sorted by `Next review` then ID; the single source of truth for current level, status, and next review date.
-- `data/weak_patterns.md`: one row per observed error pattern.
+- `data/weak_patterns.md`: one row per error category that has been observed.
+- `data/pattern_categories.md`: the fixed list of error categories; `--pattern` accepts only these names.
 - `data/sentences/YYYY-MM.md`: one immutable row per sentence first studied that month.
 - `data/history/YYYY-MM.md`: append-only, one row per assessed attempt that month. The `new` attempt row holds the immutable first learner answer.
 - `data/history/lessons/YYYY-MM-DD.md`: the immutable daily question plan, prepared before the first sentence; it is not evidence of study or recall and contains no answers or hints.
 - `logs/daily_log.md`: one row per completed session.
 - `data/streak.md`: one current snapshot of consecutive completed learning days, rebuilt from `logs/daily_log.md`.
 - `scripts/validate_learning.py`: read-only data checks and rolling weekly metrics; requires Python 3.9 or newer and no third-party packages.
+- `scripts/learning_records.py`: the only writer for attempts, sentence bank, schedule, weak patterns, completion log, and streak. It validates before and after every write and rolls back on failure.
 
 Keep cells on one line and never use `|` inside a cell. Keep `Note` cells short (about 20 words).
 
 ## Validate the records
 
 - Run commands from the workspace root, supplying the learner's current local date explicitly instead of the example date: `python -B scripts/validate_learning.py --date YYYY-MM-DD`. The script reads records and returns a nonzero exit code on inconsistency; it never writes learning data or grades English.
-- Refresh the streak snapshot from actual completed dates before the first check of a learning session. Run the validator before preparation, after saving the complete plan, after each assessed answer and all related updates, and after final log/streak updates. Run it with `--require-complete` before writing the completion log, so every saved question must have an actual assessed attempt.
+- At the start of a learning session, run `python -B scripts/learning_records.py refresh-streak --date YYYY-MM-DD`. Run the validator before preparation and after saving the complete plan. The `record` and `complete` commands validate before and after writing and roll back on failure, so no separate validator run is needed after each answer.
 - If validation fails, stop before the next question or completion. Diagnose the reported records and repair only mutable current fields using real history. Do not edit immutable plans or past answers, guess results, append an attempt twice, or change an old assessment to make a check pass. Ask the learner how to resolve an immutable conflict.
 - Warnings about legacy attempts without a plan are not proof of completion; reconstruct the plan from real records before resuming. Existing valid older plans remain immutable and keep their saved targets and selection policy.
 - Use the selected launcher from Portable runtime for all checks, including the report and completion commands. If no supported Python launcher works, report that automated checks cannot run and pause rather than silently claiming validation passed.
@@ -51,12 +53,12 @@ Keep cells on one line and never use `|` inside a cell. Keep `Note` cells short 
 
 ## Start or resume the session
 
-- When the user starts a daily session (for example, "start today's lesson", "help me study English", or "start today's 17 questions"), read before asking anything: `learner_profile.md`, `weak_patterns.md`, `streak.md`, the last rows of `daily_log.md`, the top of `review_schedule.md` (rows due up to today plus a few after), and the current month's `sentences/` and `history/` files. Refresh the streak snapshot using the rules below, so a missed day is reflected before learning starts.
+- When the user starts a daily session (for example, "start today's lesson", "help me study English", or "start today's 17 questions"), read before asking anything: `learner_profile.md`, `weak_patterns.md`, `pattern_categories.md`, `streak.md`, the last rows of `daily_log.md`, the top of `review_schedule.md` (rows due up to today plus a few after), and the current month's `sentences/` and `history/` files. Run `refresh-streak` first, so a missed day is reflected before learning starts.
 - Do not read older month files in full. Search them by ID only when a review needs a sentence's text or previous answers.
 - If today's session is already recorded as completed in `daily_log.md`, report that it is complete rather than regenerating a lesson or recording another completion.
 - If the learner profile is unset, use the default work-communication context to prepare the lesson without blocking its creation. Offer to fill in the profile later; record only what the learner states.
 - Before creating a new plan, run the report command to obtain `due_count` and `review_candidate_ids`. With over 20 sentences due (including overdue), explain the backlog and ask whether to use 5 new + 12 reviews instead of 7 + 10. This is an initial trial threshold, not a validated learning optimum. Wait for explicit confirmation; declining keeps 7 + 10. Do not alter a plan that already exists or an already-started day.
-- Prepare or reuse today's saved lesson using the rules below. **Resume check:** match today's assessed history rows to the plan by sentence ID and attempt type. Report completed counts against the saved targets, then continue with the first unassessed row. Reconcile any missing data updates for an existing attempt before advancing; never assess or append that attempt again just to recover progress.
+- Prepare or reuse today's saved lesson using the rules below. **Resume check:** run `python -B scripts/learning_records.py status --date YYYY-MM-DD`. It reports completed counts against the saved targets and the next unassessed plan row (order, type, sentence ID); read that row's Vietnamese text from the plan file. Never assess or record an attempt again just to recover progress.
 - Follow the saved order and targets: all planned new sentences first, then the planned reviews. Present exactly one Vietnamese sentence at a time and wait for the English response. Do not reveal a model translation, keywords, or hints that undermine recall.
 
 ## Prepare today's lesson
@@ -151,34 +153,33 @@ Seeing the answer never counts as recall; do not raise a level or a correct coun
 
 ## Update learning data
 
-After each assessment, immediately write UTF-8 Markdown data. Do not wait for the end of the session:
+After each assessment, save it immediately with one command. Do not wait for the end of the session, and do not hand-edit the history, sentence bank, schedule, weak patterns, log, or streak files:
 
-Stored result values: `correct` (correct and natural), `uncertain` (correct but less natural/uncertain), `incorrect`.
+```text
+python -B scripts/learning_records.py record --date YYYY-MM-DD --sentence <ID> --type new|review --answer <learner answer> --result correct|uncertain|incorrect --note <short note> [--standard <natural English> --structures <structures> --topic <topic>] [--related <earlier ID>] [--pattern <pattern>]...
+```
 
-- New sentence → append one row to `data/sentences/YYYY-MM.md` (create the file from the previous month's header if missing): `ID | Vietnamese | Standard version | Structures | Topic`.
-- For an assessed transfer item, append one link row to a separate optional table at the end of its sentence-bank month file: `Sentence ID | Related sentence`. Create that table's header if absent; do not add a column to or rewrite old sentence rows. The child is the new assessed sentence ID and the parent is an actual sentence studied before today. Each child has at most one source link, and the link alone never updates the parent's counts or schedule.
-- Every assessed attempt → append one row to `data/history/YYYY-MM.md`: `Attempt | Sentence | Type | Learner answer | Result | Note`. `Type` is `new` or `review`; `Note` is the short error explanation, or `-` when correct. Never edit earlier rows.
-- Keep the daily lesson plan unchanged. Its row is complete only when the matching assessed attempt exists in the monthly history; never write simulated answers or placeholder results to mark progress.
-- `review_schedule.md` → add a row for a new sentence or update the existing row: level, status, latest result, last studied, next review, and the correct/incorrect/uncertain/review counts. `Reviews` counts review attempts only. Move the row so the table stays sorted by `Next review`, then ID.
-- `weak_patterns.md` → for each observed error, increment the matching row (or add one with count 1), update `Last seen`, and add the sentence ID to `Recent sentences`, keeping only the 5 most recent. A pattern with count ≥ 2 is recurring and gets priority.
-- `logs/daily_log.md` → append one row only after all planned questions are completed.
-- After each answer, save the attempt, new sentence/link if applicable, schedule and weak-pattern updates, then run the validator before advancing. If a write was interrupted, derive schedule counts from actual attempts rather than incrementing again; do not duplicate the immutable attempt.
+- `--result`: `correct` (correct and natural), `uncertain` (correct but less natural/uncertain), `incorrect`.
+- `--answer`: the learner's exact answer. `--note`: the short error explanation (about 20 words), or `-` when correct.
+- New sentences also require `--standard`, `--structures`, and `--topic`; the Vietnamese text is taken from the plan.
+- `--related`: only for an assessed transfer item; the real earlier source sentence it tests. The link never changes the source sentence's counts or schedule.
+- `--pattern`: once per observed error, for incorrect or uncertain answers only. Use exactly one category name from `data/pattern_categories.md` (also listed in the `status` output); the script rejects any other text. Put the specific detail of the mistake in `--note`. If no category fits and the error is clearly a distinct kind, run `python -B scripts/learning_records.py add-category --date YYYY-MM-DD --name <lowercase-words-with-hyphens> --description <one sentence>` first and tell the learner; otherwise pick the closest existing category.
+- The script accepts only the next unassessed plan row, assigns the attempt ID, appends the history (and sentence/link) rows, rebuilds the schedule row from actual attempts, updates weak patterns, and validates. Read its JSON output. If `ok` is false, nothing was written: fix the cause and do not present the next question until the answer is saved.
+- Quote every value for the active shell. In PowerShell use single quotes and double any apostrophe (`'I''ll send it'`). In Bash use single quotes and write an apostrophe as `'\''`. Single quotes keep backticks and `$` literal in both.
+- Keep the daily lesson plan unchanged. A plan row is complete only when its assessed attempt exists; never record simulated answers or placeholder results.
 
 ## Update the streak
 
 - A day qualifies only after every row in the saved daily lesson plan, using its saved new and review targets, has a matching assessed attempt, the related learning-data updates are complete, and its completed-session row has been saved in `logs/daily_log.md`. A shortage of eligible reviews does not prevent completion. Partial sessions, explanations, and follow-up questions do not count.
 - Use the learner's local calendar date (the current date in the conversation unless the learner specifies otherwise), not elapsed 24-hour periods or UTC dates.
-- Read the `Date` column from the completed-session log, deduplicate dates, and sort them chronologically. Count each day once, even if multiple sessions or repeated summaries occur on that date. Never create log entries to fill gaps.
-- With no completed dates, write `Current streak = 0`, `Best streak = 0`, and `Last completed = -`.
-- Otherwise, `Last completed` is the latest completed date. `Best streak` is the longest consecutive-day run across all completed dates. `Current streak` is the length of the run ending on `Last completed` when it is today or yesterday; if it is older than yesterday, set `Current streak = 0` without losing the best streak. Completing a session after a gap starts a new current streak at 1.
-- Update the single row in `data/streak.md` in place. Rebuild from the log rather than incrementing blindly, so repeating a summary or recovering after an interrupted write cannot count a day twice. If the file is missing, recreate it from the log with the same columns.
+- `refresh-streak` and `complete` rebuild `data/streak.md` from the completed-session log: each day counts once, a missed day resets the current streak to 0, and the best streak is kept. Never edit the streak file by hand or create log entries to fill gaps.
 
 ## Complete the session
 
-Run `python -B scripts/validate_learning.py --date YYYY-MM-DD --require-complete` first. On success, save the completed-session log row unless already logged, rebuild `data/streak.md`, and rerun the ordinary validator before displaying the summary. If all planned answers were saved before an interruption but the completion log or streak was not, finish these updates on resume without asking extra questions or recording extra attempts.
+Run `python -B scripts/learning_records.py complete --date YYYY-MM-DD` (optionally `--notable <text>`; the default lists weak patterns seen today). It refuses unless every planned row has a real assessed attempt, appends the log row once, rebuilds the streak, and validates. Rerunning it after an interruption is safe and never logs a day twice.
 
 After all saved lesson rows have been assessed, state the number of new and review items completed against the saved targets, any unavailable reviews, totals for correct, incorrect, and less-natural/uncertain answers, recurring errors, the sentences due next with their dates, and confirm the files updated. Do not end a normal daily session after only a few explained items.
 
-Include the updated streak in the Vietnamese summary: "Streak hien tai: X ngay lien tiep. Ky luc: Y ngay." Display the actual values from `data/streak.md`, not example numbers.
+Include the updated streak in the Vietnamese summary: "Streak hien tai: X ngay lien tiep. Ky luc: Y ngay." Display the actual values from the `complete` output, not example numbers.
 
 If the workspace is a git repository, commit the data with `git add data logs` and `git commit -m "Session YYYY-MM-DD"`. Never push.
