@@ -9,32 +9,38 @@ Use this skill for daily English-learning sessions, Vietnamese-to-English transl
 
 ## Files
 
+All records are Markdown tables, one row per record. Dates are encoded in IDs (`S-YYYYMMDD-NNN`, `A-YYYYMMDD-NNN`), so the month file for any ID is `YYYY-MM.md`.
+
 - `data/learner_profile.md`: level, goals, preferred topics. Only record what the learner states; leave `not set` otherwise.
-- `data/sentence_bank.md`: one immutable section per sentence, a snapshot of its first attempt. Current state does not live here.
-- `data/review_schedule.md`: one table row per sentence; the single source of truth for current level, status, and next review date.
-- `data/answer_history.md`: append-only, one section per assessed attempt.
-- `data/weak_patterns.md`: observed error patterns with counts and related sentence IDs.
-- `logs/daily_log.md`: one entry per completed session.
+- `data/review_schedule.md`: one row per sentence, sorted by `Next review` then ID; the single source of truth for current level, status, and next review date.
+- `data/weak_patterns.md`: one row per observed error pattern.
+- `data/sentences/YYYY-MM.md`: one immutable row per sentence first studied that month.
+- `data/history/YYYY-MM.md`: append-only, one row per assessed attempt that month. The `new` attempt row holds the immutable first learner answer.
+- `logs/daily_log.md`: one row per completed session.
+
+Keep cells on one line and never use `|` inside a cell. Keep `Note` cells short (about 20 words).
 
 ## Start or resume the session
 
-- When the user starts a daily session (for example, "start today's lesson", "help me study English", or "start today's 14 questions"), read every file above before asking anything.
+- When the user starts a daily session (for example, "start today's lesson", "help me study English", or "start today's 14 questions"), read before asking anything: `learner_profile.md`, `weak_patterns.md`, the last rows of `daily_log.md`, the top of `review_schedule.md` (rows due up to today plus a few after), and the current month's `sentences/` and `history/` files.
+- Do not read older month files in full. Search them by ID only when a review needs a sentence's text or previous answers.
 - If `learner_profile.md` has `not set` for level or goals, ask the learner once, briefly, save the answers, then continue. Do not block the session if they decline.
-- **Resume check:** count today's sections in `answer_history.md` by attempt type. If any exist and `daily_log.md` has no entry for today, the session is unfinished: tell the learner the progress (for example, "Resuming: 3/7 new, 0/7 review done") and continue from the next item instead of restarting.
+- **Resume check:** count today's rows (`A-YYYYMMDD-`) in the current `history/` file by type. If any exist and `daily_log.md` has no entry for today, the session is unfinished: tell the learner the progress (for example, "Resuming: 3/7 new, 0/7 review done") and continue from the next item instead of restarting.
 - Run 7 new sentences first, then 7 reviews. Present exactly one Vietnamese sentence at a time and wait for the English response. Do not reveal a model translation, keywords, or hints that undermine recall.
 
 ## Choose new sentences
 
 - Choose useful, common communication or work sentences that fit the learner profile's topics and level.
-- Rotate topics: avoid reusing the topic of the previous new item when alternatives exist, and check the `Topic` fields in `sentence_bank.md` to avoid near-duplicates.
+- Rotate topics: avoid reusing the topic of the previous new item when alternatives exist, and check the `Topic` column of the current month's `sentences/` file to avoid near-duplicates.
 - Occasionally (about 1 in 3) target a structure from a weak pattern with count ≥ 2, using a fresh sentence.
 - Raise difficulty gradually when most recent results are "correct and natural"; keep it steady otherwise.
-- Append the `sentence_bank.md` section only after the sentence has actually been presented and assessed.
+- Append the `sentences/` row only after the sentence has actually been presented and assessed.
 
 ## Choose reviews
 
-- Eligible: sentences whose first-study date is before today. Never present a current-session new item as a review.
-- Order from `review_schedule.md`: overdue rows first (oldest `Next review` first), then lowest `Level`, then sentences linked to weak patterns with count ≥ 2. Skip sentences last studied yesterday when other eligible rows exist.
+- Eligible: sentences whose ID date is before today. Never present a current-session new item as a review.
+- Order from `review_schedule.md`: overdue rows first (oldest `Next review` first), then lowest `Level`, then sentences listed in weak patterns with count ≥ 2. Skip sentences last studied yesterday when other eligible rows exist.
+- Get the Vietnamese text and standard version from the sentence's month file by searching its ID.
 - If fewer than 7 eligible sentences exist, review every eligible real record, tell the learner exactly how many reviews are unavailable, and do not manufacture old records.
 
 ## Assess the response
@@ -74,11 +80,13 @@ Seeing the answer never counts as recall; do not raise a level or a correct coun
 
 After each assessment, immediately write UTF-8 Markdown data. Do not wait for the end of the session:
 
-- New sentence → append one `sentence_bank.md` section: unique ID `S-YYYYMMDD-NNN`, Vietnamese, first learner answer, standard version, assessment, observed explanation/errors, structures/collocations, topic, first-study date. Never replace the first learner answer.
-- Every assessed attempt → append one `answer_history.md` section: unique ID `A-YYYYMMDD-NNN`, sentence ID, date, attempt type (`new`/`review`), learner answer, standard version, result, explanation, observed structures/errors. Never edit earlier sections.
-- `review_schedule.md` → add a row for a new sentence or update the existing row: level, status, latest result, last studied, next review, and the correct/incorrect/uncertain/review counts. `Reviews` counts review attempts only. Keep rows sorted by sentence ID.
-- `weak_patterns.md` → for each observed error, increment the matching pattern (or add one with count 1), update the latest date, and append the sentence ID to `Related sentences`. A pattern with count ≥ 2 is recurring and gets priority.
-- `logs/daily_log.md` → append a real session summary only after all planned questions are completed.
+Stored result values: `correct` (correct and natural), `uncertain` (correct but less natural/uncertain), `incorrect`.
+
+- New sentence → append one row to `data/sentences/YYYY-MM.md` (create the file from the previous month's header if missing): `ID | Vietnamese | Standard version | Structures | Topic`.
+- Every assessed attempt → append one row to `data/history/YYYY-MM.md`: `Attempt | Sentence | Type | Learner answer | Result | Note`. `Type` is `new` or `review`; `Note` is the short error explanation, or `-` when correct. Never edit earlier rows.
+- `review_schedule.md` → add a row for a new sentence or update the existing row: level, status, latest result, last studied, next review, and the correct/incorrect/uncertain/review counts. `Reviews` counts review attempts only. Move the row so the table stays sorted by `Next review`, then ID.
+- `weak_patterns.md` → for each observed error, increment the matching row (or add one with count 1), update `Last seen`, and add the sentence ID to `Recent sentences`, keeping only the 5 most recent. A pattern with count ≥ 2 is recurring and gets priority.
+- `logs/daily_log.md` → append one row only after all planned questions are completed.
 
 ## Complete the session
 

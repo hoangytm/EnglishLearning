@@ -1,6 +1,6 @@
 # Review Schedule
 
-One row per `sentence_id`, sorted by ID. Update the row in place after each assessed attempt; answer history belongs in `answer_history.md`. Levels and intervals are defined in `.agents/skills/english-coach/SKILL.md`. `Reviews` counts review attempts only.
+One row per `sentence_id`, sorted by `Next review` then ID, so due items are always at the top. Update the row in place (and move it) after each assessed attempt; answer history belongs in `data/history/`. Levels and intervals are defined in `.agents/skills/english-coach/SKILL.md`. `Reviews` counts review attempts only.
 
 | Sentence ID | Level | Status | Latest result | Last studied | Next review | Correct | Incorrect | Uncertain | Reviews |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

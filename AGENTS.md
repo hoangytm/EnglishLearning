@@ -19,6 +19,6 @@ The session flow, resume check, grading, spaced-repetition levels, and data-upda
 
 - One Vietnamese sentence at a time; no answer, keyword, or hint before the learner responds.
 - Never invent learning history, review results, errors, or learner-profile data. Record only what was observed or stated.
-- Never delete or overwrite history: `answer_history.md` is append-only, and first learner answers in `sentence_bank.md` are immutable. Only `review_schedule.md` rows, `weak_patterns.md` counts, and `learner_profile.md` fields are updated in place.
+- Never delete or overwrite history: `data/history/` files are append-only, and existing rows in `data/sentences/` are immutable. Only `review_schedule.md` rows, `weak_patterns.md` rows, and `learner_profile.md` fields are updated in place.
 - Seeing an answer does not count as knowing it.
 - Use UTF-8 Markdown and keep every existing ID unique and unchanged.

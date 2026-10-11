@@ -11,11 +11,11 @@ After each sentence, you receive a natural translation, a detailed comparison, a
 ## Data structure
 
 - `data/learner_profile.md`: your level, goals, and preferred topics.
-- `data/sentence_bank.md`: first-attempt snapshot for each sentence: source sentence, your first answer, standard version, feedback, topic.
-- `data/review_schedule.md`: one table row per sentence with its current level (0–5) and next review date.
-- `data/weak_patterns.md`: observed error patterns with counts and related sentences.
-- `data/answer_history.md`: append-only history of every assessed answer.
-- `logs/daily_log.md`: concise log of each completed learning session.
+- `data/review_schedule.md`: one table row per sentence with its current level (0–5) and next review date; due items stay at the top.
+- `data/weak_patterns.md`: one table row per observed error pattern.
+- `data/sentences/YYYY-MM.md`: one row per sentence (Vietnamese, standard version, structures, topic).
+- `data/history/YYYY-MM.md`: append-only, one row per assessed answer (including your first answer).
+- `logs/daily_log.md`: one row per completed learning session.
 - `.agents/skills/english-coach/SKILL.md`: the assistant workflow (single source of truth for the rules).
 - `.github/prompts/start-english.prompt.md`: the `/start-english` prompt.
 
