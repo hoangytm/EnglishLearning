@@ -4,11 +4,45 @@ Personal English-learning workspace based on Active Recall and Spaced Repetition
 
 ## Start learning
 
-Type `/start-english` in Copilot Chat, or ask: “Start an English learning session.” The assistant presents seven new Vietnamese sentences, then ten distinct reviews from earlier sessions (or all eligible sentences if fewer than ten exist), one at a time. No model answer is shown before you respond. An unfinished session is resumed automatically on the same day.
+Type `/start-english` in Copilot Chat, or ask: “Start an English learning session.” The default is seven new Vietnamese sentences and up to ten distinct due-or-weak reviews, one at a time. Due sentences come first; retained sentences are not reviewed early just to fill the quota. With over 20 sentences due, the assistant asks before adjusting to five new and up to twelve reviews. Existing saved lessons keep their original targets. No model answer is shown before you respond. An unfinished session is resumed automatically on the same day.
 
 Before the first sentence, the assistant prepares and saves the complete question plan in `data/history/lessons/YYYY-MM-DD.md`. The plan contains no answers or hints and is reused on resume; assessed answer history determines progress. Preparation does not count as studying. This batches question preparation up front, but feedback and saving results still take place after each answer.
 
 After each sentence, you receive a natural translation, a detailed comparison, a distinction between errors and merely less-natural wording, and examples where useful. The result is saved for future sessions.
+
+When earlier errors exist, 1-2 new slots test a previously learned structure in a fresh context. These are new attempts, not reviews of the original sentence. Their source links are saved only after assessment in an optional second table in the sentence bank; old sentence rows are not rewritten.
+
+## Copilot and Codex
+
+Both hosts use root `AGENTS.md` and `.agents/skills/english-coach/SKILL.md`; no duplicate Skill or separate learning database is needed.
+
+| Action | Copilot in VS Code | Codex CLI or IDE |
+| --- | --- | --- |
+| Start or resume | `/start-english` | `$start-english` |
+| Weekly progress | `/english-progress` | `$english-progress` |
+
+Plain-text `start-english` and `english-progress` requests work through the shared instructions as well. If automatic Skill discovery is disabled or unavailable, explicitly ask the agent to read `AGENTS.md` and `.agents/skills/english-coach/SKILL.md` and follow the desired workflow. Mentioning commands in a project-maintenance request does not start practice.
+
+Open the same workspace in both hosts. Copilot learning needs Agent mode with file-editing and terminal tools; Codex learning needs workspace write access and permission to execute Python. Reports need file-reading and Python execution but do not write learning data. Respect each host's approval and sandbox settings; missing permissions must be reported rather than bypassed. Do not run two learning writers concurrently. Switching hosts resumes from the shared saved lesson and assessed history, not another host's unsaved conversation.
+
+On Windows use an available Python 3.9+ launcher (`python` or `py -3`); on Linux/macOS/WSL use `python3` or `python`. Check the version and substitute that launcher in all example commands. Quote paths with spaces and use the same underlying workspace on WSL. The validator resolves its default data root from its script location; from another directory use the absolute script path, optionally with `--root` pointing to the same workspace.
+
+## Checks and progress
+
+Python 3.9+ is required for automated checks; there are no third-party dependencies. From the workspace root:
+
+```powershell
+python -B scripts/validate_learning.py --date 2026-10-11
+python -B scripts/validate_learning.py --date 2026-10-11 --require-complete
+python -B scripts/validate_learning.py --date 2026-10-11 --report
+python -B -m unittest discover -s scripts -p "test_validate_learning.py" -v
+```
+
+Replace the example date with the learner's local date. The validator checks IDs, actual attempts, projected schedule counts/levels, plans, links, completion totals, and streak without writing data. It runs before/after preparation, after each saved assessment, and before/after completion. It checks structure and consistency, not whether an English assessment is linguistically correct. Test fixtures are isolated from learning history.
+
+Use `/english-progress` in Copilot, or ask Codex/Copilot to use `english-coach` to report weekly progress. Reports compare the last 7 days with the preceding 7 days, separate new and review results with denominators, show backlog, and explain evidence limits. Reports are read-only and do not create files. No review attempts means unknown recall, not a 0% recall score.
+
+The two Copilot prompt files and the two thin Codex entry-point Skills (`.agents/skills/start-english`, `.agents/skills/english-progress`) only select a shared workflow; they do not duplicate its rules. Codex does not read `.github/prompts/`, so the entry-point Skills (explicit invocation only) replace the prompt files there. `$english-coach` still works directly. Automated checks are explicit workflow commands, not host-specific enforced hooks. Passing the script tests establishes local data/CLI compatibility, not proof that either AI host will obey every instruction in a complete session.
 
 ## Data structure
 
@@ -22,6 +56,8 @@ After each sentence, you receive a natural translation, a detailed comparison, a
 - `data/streak.md`: current and best streaks of consecutive completed learning days, shown at the end of each session. Each day counts once; incomplete sessions do not count.
 - `.agents/skills/english-coach/SKILL.md`: the assistant workflow (single source of truth for the rules).
 - `.github/prompts/start-english.prompt.md`: the `/start-english` prompt.
+- `.github/prompts/english-progress.prompt.md`: the `/english-progress` read-only report prompt.
+- `.agents/skills/start-english/` and `.agents/skills/english-progress/`: Codex entry points (`$start-english`, `$english-progress`) that delegate to `english-coach`.
 
 Learning data is stored only in the Markdown records above and versioned with git; each completed session is committed locally.
 
