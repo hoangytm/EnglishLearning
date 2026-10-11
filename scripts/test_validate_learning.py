@@ -168,13 +168,72 @@ class LearningValidationTests(unittest.TestCase):
         self.assertEqual(0, report['previous_week']['new']['attempts'])
         self.assertEqual(1, report['current_week']['completed_days'])
 
-    def test_adaptive_proposal_requires_more_than_twenty_due(self):
+    def test_flexible_proposal_shifts_unused_review_slots_to_new(self):
         row = {'Sentence ID': 'S-20261001-001', 'Next review': '2026-10-10', 'Level': '0', 'Latest result': 'incorrect'}
-        self.data['schedule'] = [dict(row, **{'Sentence ID': f'S-20261001-{index:03}'}) for index in range(1, 21)]
-        self.assertFalse(progress_report(self.data, TODAY)['quota_proposal']['requires_confirmation'])
-        self.data['schedule'].append(dict(row, **{'Sentence ID': 'S-20261001-021'}))
-        proposal = progress_report(self.data, TODAY)['quota_proposal']
-        self.assertEqual({'new': 5, 'reviews': 12, 'requires_confirmation': True}, proposal)
+        expected = {0: (17, 0), 10: (7, 10), 14: (3, 14), 30: (3, 14)}
+        for count, (new, reviews) in expected.items():
+            self.data['schedule'] = [dict(row, **{'Sentence ID': f'S-20261001-{index:03}'}) for index in range(1, count + 1)]
+            proposal = progress_report(self.data, TODAY)['quota_proposal']
+            self.assertEqual({'new': new, 'reviews': reviews, 'policy': 'flexible-17'}, proposal, count)
+
+    def flexible_day(self, older, new_count):
+        self.data['logs'] = []
+        self.data['streak'] = [streak_snapshot([], TODAY)]
+        keep = min(new_count, 7)
+        self.data['attempts'] = self.data['attempts'][:keep]
+        self.data['sentence_rows'] = self.data['sentence_rows'][:keep]
+        self.data['schedule'] = self.data['schedule'][:keep]
+        reviews = []
+        for number in range(1, older + 1):
+            identifier = f'S-20261001-{number:03}'
+            self.data['sentence_rows'].append(dict(zip(SENTENCE_COLUMNS, (identifier, f'Old {number}', 'Answer', 'example', 'work'))))
+            attempt = dict(zip(ATTEMPT_COLUMNS, (f'A-20261001-{number:03}', identifier, 'new', 'Answer', 'incorrect', 'Issue')))
+            self.data['attempts'].append(attempt)
+            self.data['schedule'].append(dict(project_schedule([attempt]), **{'Sentence ID': identifier}))
+        self.data['schedule'].sort(key=lambda row: (row['Next review'], row['Sentence ID']))
+        review_count = min(14, older)
+        for number in range(1, review_count + 1):
+            reviews.append(dict(zip(PLAN_COLUMNS, (str(new_count + number), 'review', f'S-20261001-{number:03}', f'Old {number}'))))
+        news = [dict(zip(PLAN_COLUMNS, (str(number), 'new', f'S-20261011-{number:03}', f'Question {number}')))
+                for number in range(1, new_count + 1)]
+        plan = self.data['plans'][TODAY]
+        plan.update({'New target': str(new_count), 'Review target': str(review_count),
+                     'Unavailable reviews': str(14 - review_count), 'Review selection': 'due-and-weak',
+                     'Quota policy': 'flexible-17', 'rows': news + reviews})
+        return plan
+
+    def test_flexible_plan_balances_new_and_reviews(self):
+        for older, new_count in ((0, 17), (10, 7), (14, 3), (30, 3)):
+            self.flexible_day(older, new_count)
+            self.assertEqual([], validate(self.data, TODAY)[0], (older, new_count))
+            self.setUp()
+
+    def test_flexible_plan_rejects_wrong_split(self):
+        for older, new_count in ((0, 7), (10, 8), (30, 4), (30, 2)):
+            plan = self.flexible_day(older, new_count)
+            plan['Unavailable reviews'] = str(14 - int(plan['Review target']))
+            self.assertTrue(any('invalid targets' in error for error in validate(self.data, TODAY)[0]), (older, new_count))
+            self.setUp()
+
+    def test_exact_vietnamese_repeats_are_rejected(self):
+        self.assertEqual([], validate(self.data, TODAY)[0])
+        self.data['sentence_rows'][1]['Vietnamese'] = ' QUESTION 1!! '
+        self.data['plans'][TODAY]['rows'][1]['Vietnamese'] = ' QUESTION 1!! '
+        errors = validate(self.data, TODAY)[0]
+        self.assertTrue(any('S-20261011-002: repeats the Vietnamese of S-20261011-001' in e for e in errors))
+        self.assertTrue(any('lesson 2026-10-11: S-20261011-002 repeats' in e for e in errors))
+
+    def test_planned_new_question_cannot_repeat_bank_or_batch(self):
+        plan = self.flexible_day(2, 15)
+        plan['rows'][12]['Vietnamese'] = 'Fresh A'
+        plan['rows'][13]['Vietnamese'] = 'fresh a.'
+        self.assertTrue(any('S-20261011-014 repeats the Vietnamese of S-20261011-013' in e
+                            for e in validate(self.data, TODAY)[0]))
+        plan['rows'][13]['Vietnamese'] = 'Old 1'
+        self.assertTrue(any('S-20261011-014 repeats the Vietnamese of S-20261001-001' in e
+                            for e in validate(self.data, TODAY)[0]))
+        plan['rows'][13]['Vietnamese'] = 'Fresh B'
+        self.assertEqual([], validate(self.data, TODAY)[0])
 
     def test_optional_related_link_and_future_link(self):
         self.data['links'] = [{'Sentence ID': 'S-20261011-007', 'Related sentence': 'S-20261011-001'}]

@@ -4,8 +4,8 @@ Record only observed errors. One row per category from `data/pattern_categories.
 
 | Pattern | Count | Last seen | Example | Recent sentences |
 | --- | --- | --- | --- | --- |
-| time-preposition | 2 | 2026-10-11 | I’ll call you tomorrow morning. | S-20261011-002, S-20261011-006 |
-| number-fidelity | 2 | 2026-10-11 | Cuộc họp đã được dời → The meeting has been moved. | S-20261011-001, S-20261011-003 |
-| subject-verb | 1 | 2026-10-11 | which part … need to change → which part … needs to change | S-20261011-004 |
-| tense-aspect | 1 | 2026-10-11 | i could not complete this work → I haven't been able to finish this work yet | S-20261011-005 |
-| verb-pattern | 1 | 2026-10-11 | your help to resolve this issue → helping me resolve this issue | S-20261011-007 |
+| article | 1 | 2026-10-11 | I'll send the update before the end of the day. | S-20261011-001 |
+| preposition | 2 | 2026-10-11 | Could you share your screen during the meeting? | S-20261011-002, S-20261011-010 |
+| verb-pattern | 1 | 2026-10-11 | This report has to be completed before Friday. | S-20261011-006 |
+| word-choice | 2 | 2026-10-11 | I am not sure who is responsible for this part of the project. | S-20261011-007, S-20261011-008 |
+| collocation | 1 | 2026-10-11 | The meeting has been postponed until next week. | S-20261011-009 |

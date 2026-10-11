@@ -4,7 +4,7 @@ Personal English-learning workspace based on Active Recall and Spaced Repetition
 
 ## Start learning
 
-Type `/start-english` in Copilot Chat, or ask: “Start an English learning session.” The default is seven new Vietnamese sentences and up to ten distinct due-or-weak reviews, one at a time. Due sentences come first; retained sentences are not reviewed early just to fill the quota. With over 20 sentences due, the assistant asks before adjusting to five new and up to twelve reviews. Existing saved lessons keep their original targets. No model answer is shown before you respond. An unfinished session is resumed automatically on the same day.
+Type `/start-english` in Copilot Chat, or ask: “Start an English learning session.” A session has 17 questions with a flexible split, one at a time. Reviews come first: up to 14 distinct due-or-weak sentences (due sentences first; retained sentences are not reviewed early just to fill the quota). Unused review slots become new sentences, with at least 3 new, so 10 reviews give 7 new, 3 reviews give 14 new, and no reviews give 17 new. No confirmation is needed. Existing saved lessons keep their original targets. No model answer is shown before you respond. An unfinished session is resumed automatically on the same day.
 
 Before the first sentence, the assistant prepares and saves the complete question plan in `data/history/lessons/YYYY-MM-DD.md`. The plan contains no answers or hints and is reused on resume; assessed answer history determines progress. Preparation does not count as studying. This batches question preparation up front, but feedback and saving results still take place after each answer.
 

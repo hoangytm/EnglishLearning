@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import unicodedata
 
 
 SENTENCE_COLUMNS = ('ID', 'Vietnamese', 'Standard version', 'Structures', 'Topic')
@@ -20,6 +21,9 @@ STREAK_COLUMNS = ('Current streak', 'Best streak', 'Last completed')
 PATTERN_COLUMNS = ('Pattern', 'Count', 'Last seen', 'Example', 'Recent sentences')
 CATEGORY_COLUMNS = ('Category', 'Description')
 CATEGORY_NAME = re.compile(r'[a-z]+(-[a-z]+)*')
+DAILY_TOTAL = 17
+MAX_REVIEWS = 14
+FLEXIBLE_POLICY = 'flexible-17'
 INTERVALS = (1, 3, 7, 14, 30, 60)
 RESULTS = ('correct', 'incorrect', 'uncertain')
 
@@ -77,6 +81,10 @@ def id_date(identifier, prefix):
     if not match or int(match[2]) == 0:
         raise DataError(f'invalid ID: {identifier}')
     return date.fromisoformat(f'{match[1][:4]}-{match[1][4:6]}-{match[1][6:]}')
+
+
+def normalize_text(text):
+    return re.sub(r'[\W_]+', ' ', unicodedata.normalize('NFC', text).casefold()).strip()
 
 
 def unique(rows, column, label, errors):
@@ -149,7 +157,8 @@ def load_data(root):
             if len(values) != 1:
                 raise DataError(f'{path}: expected one {name} field')
             fields[name] = values[0].strip()
-        for name, allowed in (('Review selection', 'due-and-weak'), ('Quota adjustment approved', 'yes')):
+        for name, allowed in (('Review selection', 'due-and-weak'), ('Quota adjustment approved', 'yes'),
+                              ('Quota policy', FLEXIBLE_POLICY)):
             values = re.findall(rf'^- {re.escape(name)}: (.+)$', text, re.MULTILINE)
             if values and (len(values) != 1 or values[0].strip() != allowed):
                 raise DataError(f'{path}: invalid {name} field')
@@ -187,6 +196,11 @@ def validate(data, today, require_complete=False, allow_stale_streak=False):
     errors = []
     warnings = []
     sentences = unique(data['sentence_rows'], 'ID', 'sentence bank', errors)
+    owners = {}
+    for row in data['sentence_rows']:
+        owner = owners.setdefault(normalize_text(row['Vietnamese']), row['ID'])
+        if owner != row['ID']:
+            errors.append(f"{row['ID']}: repeats the Vietnamese of {owner}")
     unique(data['attempts'], 'Attempt', 'history', errors)
     schedules = unique(data['schedule'], 'Sentence ID', 'schedule', errors)
     logs = unique(data['logs'], 'Date', 'completed log', errors)
@@ -268,11 +282,16 @@ def validate(data, today, require_complete=False, allow_stale_streak=False):
                           if (prior := [row for row in attempts if id_date(row['Attempt'], 'A') < lesson_date])]
         prior_due, candidates = review_candidates(prior_schedule, lesson_date)
         selectable = {row['Sentence ID'] for row in candidates} if plan.get('Review selection') else eligible
-        capacity = review_target + missing
-        if (new_target, capacity) not in ((7, 10), (5, 12)) or review_target != min(capacity, len(selectable)):
-            errors.append(f'lesson {lesson_date}: invalid targets or unavailable-review count')
-        if new_target == 5 and (plan.get('Quota adjustment approved') != 'yes' or len(prior_due) <= 20):
-            errors.append(f'lesson {lesson_date}: adaptive quota requires confirmation and over 20 due sentences')
+        if plan.get('Quota policy'):
+            if not (plan.get('Review selection') and review_target == min(MAX_REVIEWS, len(selectable))
+                    and missing == MAX_REVIEWS - review_target and new_target == DAILY_TOTAL - review_target):
+                errors.append(f'lesson {lesson_date}: invalid targets or unavailable-review count')
+        else:
+            capacity = review_target + missing
+            if (new_target, capacity) not in ((7, 10), (5, 12)) or review_target != min(capacity, len(selectable)):
+                errors.append(f'lesson {lesson_date}: invalid targets or unavailable-review count')
+            if new_target == 5 and (plan.get('Quota adjustment approved') != 'yes' or len(prior_due) <= 20):
+                errors.append(f'lesson {lesson_date}: adaptive quota requires confirmation and over 20 due sentences')
         if lesson_date > today:
             errors.append(f'lesson {lesson_date}: future lesson date')
         expected_types = ['new'] * new_target + ['review'] * review_target
@@ -285,6 +304,9 @@ def validate(data, today, require_complete=False, allow_stale_streak=False):
                 if first_date != lesson_date or identifier in reserved:
                     errors.append(f'lesson {lesson_date}: invalid or duplicated reserved ID {identifier}')
                 reserved[identifier] = lesson_date
+                owner = owners.setdefault(normalize_text(row['Vietnamese']), identifier)
+                if owner != identifier:
+                    errors.append(f'lesson {lesson_date}: {identifier} repeats the Vietnamese of {owner}')
             elif row['Type'] == 'review' and identifier not in selectable:
                 errors.append(f'lesson {lesson_date}: ineligible review {identifier}')
             if identifier in sentences and row['Vietnamese'] != sentences[identifier]['Vietnamese']:
@@ -357,8 +379,8 @@ def progress_report(data, today):
         'overdue_count': sum(date.fromisoformat(row['Next review']) < today for row in due),
         'due_ids': [row['Sentence ID'] for row in due],
         'review_candidate_ids': [row['Sentence ID'] for row in candidates],
-        'quota_proposal': {'new': 5, 'reviews': 12, 'requires_confirmation': True} if len(due) > 20
-                          else {'new': 7, 'reviews': 10, 'requires_confirmation': False},
+        'quota_proposal': {'new': DAILY_TOTAL - min(MAX_REVIEWS, len(candidates)),
+                           'reviews': min(MAX_REVIEWS, len(candidates)), 'policy': FLEXIBLE_POLICY},
         'related_sentence_links': data['links'],
         'limitations': ['No study-duration measurements.', 'Notes describe attempts, not stable error categories.',
                         'Weak-pattern snapshots cannot prove weekly improvement; use actual attempt evidence.'],

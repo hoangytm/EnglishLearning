@@ -1,6 +1,6 @@
 ---
 name: english-coach
-description: "Prepare a saved daily Vietnamese-to-English lesson, normally 7 new sentences and 10 reviews; validate learning records, suggest backlog adjustments with permission, practise transfer, and report weekly progress or recurring errors without starting practice."
+description: "Prepare a saved daily Vietnamese-to-English lesson of 17 questions with a flexible split of new and review sentences (reviews first, at least 3 new); validate learning records, practise transfer, and report weekly progress or recurring errors without starting practice."
 ---
 
 # English Coach
@@ -57,8 +57,8 @@ Keep cells on one line and never use `|` inside a cell. Keep `Note` cells short 
 - Do not read older month files in full. Search them by ID only when a review needs a sentence's text or previous answers.
 - If today's session is already recorded as completed in `daily_log.md`, report that it is complete rather than regenerating a lesson or recording another completion.
 - If the learner profile is unset, use the default work-communication context to prepare the lesson without blocking its creation. Offer to fill in the profile later; record only what the learner states.
-- Before creating a new plan, run the report command to obtain `due_count` and `review_candidate_ids`. With over 20 sentences due (including overdue), explain the backlog and ask whether to use 5 new + 12 reviews instead of 7 + 10. This is an initial trial threshold, not a validated learning optimum. Wait for explicit confirmation; declining keeps 7 + 10. Do not alter a plan that already exists or an already-started day.
-- Prepare or reuse today's saved lesson using the rules below. **Resume check:** run `python -B scripts/learning_records.py status --date YYYY-MM-DD`. It reports completed counts against the saved targets and the next unassessed plan row (order, type, sentence ID); read that row's Vietnamese text from the plan file. Never assess or record an attempt again just to recover progress.
+- Before creating a new plan, run the report command to obtain `review_candidate_ids` and `quota_proposal` (the new and review counts for today). No confirmation is needed for the split. Do not alter a plan that already exists or an already-started day.
+- Prepare or reuse today's saved lesson using the rules below. **Resume check:** run `python -B scripts/learning_records.py status --date YYYY-MM-DD`. It reports completed counts against the saved targets and the next unassessed plan row (order, type, sentence ID); read that row's Vietnamese text from the plan file.
 - Follow the saved order and targets: all planned new sentences first, then the planned reviews. Present exactly one Vietnamese sentence at a time and wait for the English response. Do not reveal a model translation, keywords, or hints that undermine recall.
 
 ## Prepare today's lesson
@@ -67,12 +67,12 @@ Keep cells on one line and never use `|` inside a cell. Keep `Note` cells short 
 - If the plan already exists, reuse it without replacing its questions, IDs, order, or targets. Do not select new questions between attempts. Leave earlier days' plans unchanged.
 - If no plan exists but today's assessed attempts already exist, reconstruct their question rows from the real sentence bank and history first, retaining their IDs and type. Include these completed rows in the targets, then fill only the remaining slots. Do not restart a partially completed day.
 - Reserve unique `S-YYYYMMDD-NNN` IDs for planned new sentences, checking both the sentence bank and existing lesson plans for collisions. A reserved ID does not mean the sentence has been studied. Reuse its exact ID and Vietnamese text when it is later assessed.
-- Choose all new questions using the new-sentence rules below, checking for near-duplicates both in the bank and within the planned batch. Choose reviews only from real assessed sentences using the review rules below; never from an unassessed draft plan.
-- Default to `New target = 7` and review capacity 10. Only with explicit approval of the backlog adjustment before this day has started, use `New target = 5` and capacity 12. Set `Review target` to the smaller of capacity and the distinct due-or-weak review pool at the start of the day, including already assessed reviews when reconstructing a legacy day. Set `Unavailable reviews` to capacity minus that target. Freeze the targets for this session, even if the schedule later changes after answers.
-- Add `Review selection: due-and-weak` to new plans. For an approved 5 + 12 plan, also add `Quota adjustment approved: yes`; never claim confirmation without the learner's actual approval. To reconstruct an already-started day without a plan, keep 7 + 10 and the legacy all-earlier-sentences policy rather than retroactively applying the new selection rule; leave the optional selection field absent and retain its real attempts.
+- Choose all new questions using the new-sentence rules below, checking for near-duplicates both in the bank and within the planned batch. The validator rejects an exact repeat of any earlier or planned Vietnamese sentence (ignoring case, punctuation, and spacing); near-duplicates remain your judgment, so search older month files by key words as well. Choose reviews only from real assessed sentences using the review rules below; never from an unassessed draft plan.
+- Every new plan has 17 questions with a flexible split. Reviews have priority: `Review target` = the smaller of 14 and the distinct due-or-weak review pool at the start of the day. `New target` = 17 minus `Review target`, so unused review slots go to new sentences and there are always at least 3 new (3 to 17). Set `Unavailable reviews` to 14 minus `Review target`. Freeze the targets for this session, even if the schedule later changes after answers.
+- Add `Review selection: due-and-weak` and `Quota policy: flexible-17` to new plans; the validator rejects any other split. To reconstruct an already-started day without a plan, keep 7 + 10 and the legacy all-earlier-sentences policy rather than retroactively applying the new rules; leave both optional fields absent and retain its real attempts. Older saved plans (7 + 10 or an approved 5 + 12) stay valid and unchanged.
 - Store the date, targets, and an ordered table with columns `Order | Type | Sentence ID | Vietnamese`. Use `new` or `review` for `Type`. Do not store English translations, structures, learner answers, results, or explanations in the plan. Do not show the full question list in chat; only present the current sentence.
-- Before starting, check that orders are sequential, sentence IDs are unique, row counts match the saved targets, new rows precede reviews, and every review ID resolves to an assessed sentence first studied before today. Check that reconstructed completed rows match the existing history. Run the validator on the saved plan; do not start an invalid or incomplete plan.
-- Preparation alone must not add rows to the sentence bank, assessed answer history, review schedule, weak patterns, or completed-session log, and must not increase the streak. Only assessed answers trigger learning-data updates.
+- Run the validator on the saved plan; do not start an invalid or incomplete plan. It checks order, unique IDs, row counts, new-before-review order, review eligibility, and that reconstructed rows match the existing history.
+- Preparation alone must not add learning records or increase the streak. Only assessed answers trigger learning-data updates.
 
 Plan format (placeholders below describe the schema, not learning records):
 
@@ -80,10 +80,11 @@ Plan format (placeholders below describe the schema, not learning records):
 # Lesson YYYY-MM-DD
 
 - Lesson date: YYYY-MM-DD
-- New target: <7 by default, or 5 with explicit approval>
-- Review target: <review pool capped at 10, or 12 with explicit approval>
-- Unavailable reviews: <capacity minus review target>
+- New target: <17 minus review target; at least 3>
+- Review target: <review pool capped at 14>
+- Unavailable reviews: <14 minus review target>
 - Review selection: due-and-weak
+- Quota policy: flexible-17
 
 | Order | Type | Sentence ID | Vietnamese |
 | --- | --- | --- | --- |
@@ -103,28 +104,27 @@ Plan format (placeholders below describe the schema, not learning records):
 - Eligible: sentences whose ID date is before today. Never present a current-session new item as a review.
 - Review each sentence at most once per daily session. On resume, skip sentence IDs already assessed as reviews today; those attempts count toward the planned review target.
 - For new plans, select all due items first: `Next review` on or before the lesson date, oldest date first, then lowest level; recurring weak patterns can break further ties. Do not skip a due sentence merely because it was studied yesterday.
-- Fill remaining slots only with earlier sentences at level 0 or 1, or with latest result `incorrect`/`uncertain`, prioritising low levels and recurring weak patterns. Do not review a retained level-2-or-higher correct sentence early just to fill the quota. If the due-or-weak pool is smaller than capacity, save the reduced review target and disclose the shortage. Use the state before today's attempts when reconstructing targets.
-- An existing saved lesson keeps its exact review IDs even if the current schedule has changed or the lesson used the older all-earlier-sentences rule.
-- Get the Vietnamese text and standard version from the sentence's month file by searching its ID.
-- During preparation, copy only the Vietnamese text into the plan. Retrieve the standard version for feedback after the learner answers; do not expose it in the saved question plan.
-- Review every planned distinct row, tell the learner the saved `Unavailable reviews` count, and do not manufacture records or repeat sentences to fill the quota.
+- Fill remaining slots only with earlier sentences at level 0 or 1, or with latest result `incorrect`/`uncertain`, prioritising low levels and recurring weak patterns. Do not review a retained level-2-or-higher correct sentence early just to fill the quota. If the due-or-weak pool is smaller than 14, save the reduced review target; the unused slots become new sentences. Use the state before today's attempts when reconstructing targets.
+- Get the Vietnamese text and standard version from the sentence's month file by searching its ID. Copy only the Vietnamese text into the plan; retrieve the standard version for feedback after the learner answers.
+- Review every planned distinct row, tell the learner how many review slots became new sentences (`Unavailable reviews`), and do not manufacture records or repeat sentences to fill the quota.
 
 ## Assess the response
 
-After every new or review answer, explain in Vietnamese, with English sentences and phrases as examples. Give enough detail to understand why, not just a corrected answer. Use this order:
+After every new or review answer, explain in Vietnamese like a teacher explaining to a student, with English sentences and phrases as examples. Be thorough about what went wrong: the learner wants to understand the rule and the word meaning, not only see a corrected answer. Use this order:
 
 1. Quote the learner's exact answer and give a clear label: "incorrect", "correct but less natural/uncertain", or "correct and natural".
 2. Give a natural version a native speaker would commonly use in the likely context. State the context or register when it matters (for example, a work email versus casual conversation). Do not imply that there is only one valid native-speaker version.
-3. Compare the answer phrase by phrase where correction is needed: quote the problematic phrase, show its replacement, and explain why. Cover each meaningful error in grammar, meaning, vocabulary, collocation, preposition, tense, or phrasing. For each main issue, use roughly 2-4 explanatory sentences describing the rule or meaning difference and how it applies here; do not merely name the error.
-4. Explain why the suggested native-speaker phrasing fits the context. Clearly separate genuine errors from valid but less-natural or differently formal alternatives. If the learner's answer is already natural, say so and explain what works instead of inventing corrections.
-5. Give 1-2 short additional examples when useful, explaining the relevant contrast, then finish with 1-2 takeaways to remember.
+3. **Grammar and structure:** for each grammar or structure error, quote the problematic phrase, show the replacement, name the rule in plain terms, explain why it applies here and what the learner's version would mean or sound like instead, and add a common pattern to apply next time (for example, `help + object + verb`). Use roughly 3-5 sentences per main issue.
+4. **Word choice:** for each vocabulary, collocation, preposition, or register issue, say what the learner's word means, why it does not fit this context, and how the better word or phrase differs in meaning, tone, or usage. Compare similar words when useful.
+5. Explain why the suggested native-speaker phrasing fits the context. Clearly separate genuine errors from valid but less-natural or differently formal alternatives. If the learner's answer is already natural, say so and explain what works instead of inventing corrections.
+6. Give 2-3 short additional examples that reuse the corrected structure or word in different situations, each with a one-line explanation of the contrast. Finish with 1-2 takeaways to remember.
 
 Keep the detailed explanation in chat; retain only the short `Note` in learning history. Persist the assessment immediately according to the data-update rules below.
 
 ## Pause before the next sentence
 
-- Do not include the next Vietnamese sentence in the same message as an assessment. When questions remain, finish by asking the learner to say they are ready or ask about the explanation, then wait for their response.
-- If the learner asks a follow-up question, clarify the same answer and wait again. Present the next sentence only after they indicate readiness (for example, "tiep", "next", or "OK"). This pause does not abandon the planned session.
+- Do not include the next Vietnamese sentence in the same message as an assessment. When questions remain, end the message with exactly this line and nothing after it: `Gõ 1 để sang câu tiếp theo.` Never ask the learner to type "tiếp", "next", or any other word; the learner continues by typing only `1`. Then wait for the learner's response.
+- If the learner asks a follow-up question, clarify the same answer, end with the same line, and wait again. Treat `1` (also "tiep", "tiếp", "next", or "OK") as the learner being ready and present the next sentence immediately, without asking for further confirmation. This pause does not abandon the planned session.
 - Follow-up discussion or repeating the correction after seeing it is not a new recall attempt: do not append another assessed attempt or change counts or levels for it.
 - After the final planned answer, provide the explanation and the completed-session summary; there is no next sentence to wait for.
 
@@ -143,13 +143,13 @@ Do not treat a stylistic choice as an error. Accept natural alternatives unless 
 | 4 | 30 days | mastered |
 | 5 | 60 days | mastered |
 
-Apply after every independently produced attempt (new or review):
+Apply after every independently produced attempt (new or review); the script computes the level and next review date from `--result`:
 
-- incorrect → Level 0, next review = today + 1 day.
-- correct but less natural/uncertain → Level 1, next review = today + 3 days.
-- correct and natural → Level = max(current + 1, 2), capped at 5; next review = today + that level's interval.
+- incorrect → Level 0.
+- correct but less natural/uncertain → Level 1.
+- correct and natural → Level = max(current + 1, 2), capped at 5.
 
-Seeing the answer never counts as recall; do not raise a level or a correct count for it.
+Next review = today + the level's interval. Seeing the answer never counts as recall; do not raise a level or a correct count for it.
 
 ## Update learning data
 
@@ -164,15 +164,14 @@ python -B scripts/learning_records.py record --date YYYY-MM-DD --sentence <ID> -
 - New sentences also require `--standard`, `--structures`, and `--topic`; the Vietnamese text is taken from the plan.
 - `--related`: only for an assessed transfer item; the real earlier source sentence it tests. The link never changes the source sentence's counts or schedule.
 - `--pattern`: once per observed error, for incorrect or uncertain answers only. Use exactly one category name from `data/pattern_categories.md` (also listed in the `status` output); the script rejects any other text. Put the specific detail of the mistake in `--note`. If no category fits and the error is clearly a distinct kind, run `python -B scripts/learning_records.py add-category --date YYYY-MM-DD --name <lowercase-words-with-hyphens> --description <one sentence>` first and tell the learner; otherwise pick the closest existing category.
-- The script accepts only the next unassessed plan row, assigns the attempt ID, appends the history (and sentence/link) rows, rebuilds the schedule row from actual attempts, updates weak patterns, and validates. Read its JSON output. If `ok` is false, nothing was written: fix the cause and do not present the next question until the answer is saved.
+- The script accepts only the next unassessed plan row, updates every related record, and validates. Read its JSON output. If `ok` is false, nothing was written: fix the cause and do not present the next question until the answer is saved.
 - Quote every value for the active shell. In PowerShell use single quotes and double any apostrophe (`'I''ll send it'`). In Bash use single quotes and write an apostrophe as `'\''`. Single quotes keep backticks and `$` literal in both.
-- Keep the daily lesson plan unchanged. A plan row is complete only when its assessed attempt exists; never record simulated answers or placeholder results.
 
 ## Update the streak
 
-- A day qualifies only after every row in the saved daily lesson plan, using its saved new and review targets, has a matching assessed attempt, the related learning-data updates are complete, and its completed-session row has been saved in `logs/daily_log.md`. A shortage of eligible reviews does not prevent completion. Partial sessions, explanations, and follow-up questions do not count.
+- A day qualifies only after every row in the saved daily lesson plan has a matching assessed attempt and its completed-session row has been saved in `logs/daily_log.md`. A shortage of eligible reviews does not prevent completion. Partial sessions, explanations, and follow-up questions do not count.
 - Use the learner's local calendar date (the current date in the conversation unless the learner specifies otherwise), not elapsed 24-hour periods or UTC dates.
-- `refresh-streak` and `complete` rebuild `data/streak.md` from the completed-session log: each day counts once, a missed day resets the current streak to 0, and the best streak is kept. Never edit the streak file by hand or create log entries to fill gaps.
+- `refresh-streak` and `complete` rebuild `data/streak.md` from the log. Never edit the streak file by hand or create log entries to fill gaps.
 
 ## Complete the session
 
@@ -182,4 +181,4 @@ After all saved lesson rows have been assessed, state the number of new and revi
 
 Include the updated streak in the Vietnamese summary: "Streak hien tai: X ngay lien tiep. Ky luc: Y ngay." Display the actual values from the `complete` output, not example numbers.
 
-If the workspace is a git repository, commit the data with `git add data logs` and `git commit -m "Session YYYY-MM-DD"`. Never push.
+Do not commit or push unless the learner explicitly asks.
