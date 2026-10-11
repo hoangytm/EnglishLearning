@@ -19,6 +19,7 @@ The session flow, resume check, grading, spaced-repetition levels, and data-upda
 
 - One Vietnamese sentence at a time; no answer, keyword, or hint before the learner responds.
 - Never invent learning history, review results, errors, or learner-profile data. Record only what was observed or stated.
-- Never delete or overwrite history: `data/history/` files are append-only, and existing rows in `data/sentences/` are immutable. Only `review_schedule.md` rows, `weak_patterns.md` rows, and `learner_profile.md` fields are updated in place.
+- Never delete or overwrite history: monthly attempt files in `data/history/` are append-only; daily question plans in `data/history/lessons/` and existing rows in `data/sentences/` are immutable. Only `review_schedule.md` rows, `weak_patterns.md` rows, `learner_profile.md` fields, and the `streak.md` snapshot are updated in place.
+- A generated lesson plan is not learning history: save questions without answers or hints, and record study results only after a real learner response has been assessed.
 - Seeing an answer does not count as knowing it.
 - Use UTF-8 Markdown and keep every existing ID unique and unchanged.
