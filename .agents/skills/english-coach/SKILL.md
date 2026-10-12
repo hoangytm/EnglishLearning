@@ -51,9 +51,22 @@ Keep cells on one line and never use `|` inside a cell. Keep `Note` cells short 
 - Compare review recall only when both periods have review attempts; with fewer than 5 review attempts in either period, describe the sample as too small for a reliable trend. Even larger samples can differ in difficulty; avoid declaring mastery from a weekly percentage alone.
 - Finish with one practical focus for the next week grounded in observed attempts or due backlog. If there is no such evidence, suggest continuing to collect real practice data. Do not invent study duration or guarantee the daily quota fits 30 minutes.
 
+## Sync with git before learning
+
+For `start-english` and any daily-session start, do this before reading learning records, so data pulled from the other host is what you read. Skip it for progress reports. Use the native terminal, quote for the active shell (PowerShell needs `'@{u}'`), and never run Git commands that discard work.
+
+1. If this is not a git repository or Git is unavailable, tell the learner once and skip the rest of this section.
+2. Run `git status --porcelain` (it includes untracked files). If it prints anything, show the changed files and ask the learner whether to commit them. Wait for the answer.
+   - Yes: `git add -A`, then commit with a short message describing the changes (for example `Learning data update YYYY-MM-DD` when only `data/` and `logs/` changed). Report the commit.
+   - No: do not pull, because a pull on a dirty tree can fail or mix changes. Tell the learner that local data may be behind GitHub, then continue the session. Never stash, reset, checkout, or discard their changes.
+3. If the tree is clean (or was just committed) and `git rev-parse --abbrev-ref '@{u}'` shows an upstream, run `git pull --ff-only` and report the result in one line (already up to date, or how many commits arrived). With no upstream, tell the learner and skip the pull.
+   - If the pull fails because of the network or sign-in, report the error and continue the session with local data.
+   - If it fails because the branches diverged, stop and ask how to proceed. Do not merge, rebase, force, or reset unless the learner asks.
+4. If `git rev-list --count '@{u}..HEAD'` is above 0, mention the number of local commits that are not pushed yet. Do not ask about it here.
+
 ## Start or resume the session
 
-- When the user starts a daily session (for example, "start today's lesson", "help me study English", or "start today's 17 questions"), read before asking anything: `learner_profile.md`, `weak_patterns.md`, `pattern_categories.md`, `streak.md`, the last rows of `daily_log.md`, the top of `review_schedule.md` (rows due up to today plus a few after), and the current month's `sentences/` and `history/` files. Run `refresh-streak` first, so a missed day is reflected before learning starts.
+- When the user starts a daily session (for example, "start today's lesson", "help me study English", or "start today's 17 questions"), first complete **Sync with git before learning**, then read before asking anything: `learner_profile.md`, `weak_patterns.md`, `pattern_categories.md`, `streak.md`, the last rows of `daily_log.md`, the top of `review_schedule.md` (rows due up to today plus a few after), and the current month's `sentences/` and `history/` files. Run `refresh-streak` first, so a missed day is reflected before learning starts.
 - Do not read older month files in full. Search them by ID only when a review needs a sentence's text or previous answers.
 - If today's session is already recorded as completed in `daily_log.md`, report that it is complete rather than regenerating a lesson or recording another completion.
 - If the learner profile is unset, use the default work-communication context to prepare the lesson without blocking its creation. Offer to fill in the profile later; record only what the learner states.
@@ -92,11 +105,15 @@ Plan format (placeholders below describe the schema, not learning records):
 
 ## Choose new sentences
 
-- Choose useful, common communication or work sentences that fit the learner profile's topics and level.
+- Base every new question on `data/learner_profile.md`; its level, goals, and preferred topics are required inputs, not decoration. Profile changes affect only plans created afterwards.
+- **Topics:** pick each new question from the profile's topic list. Spread a day's new questions across different topics, include both work and daily-life topics when the list has both, and favour the topics least used in recent sentences (count the `Topic` column over the last 2 weeks of `sentences/` files). Older labels such as `work – scheduling` count toward the closest profile topic. Within a topic, vary the situation instead of repeating a scenario. If the profile has no topics, use everyday work communication.
+- **Level:** write for the profile level. For B1-B2, use roughly 10-22 words, natural spoken or written Vietnamese that a real person would say (no word-for-word translationese), and common vocabulary. Include a mix of structures such as past/present perfect, conditionals, modals, passive, relative clauses, reported speech, phrasal verbs, and linking words. Avoid very basic one-clause sentences, rare idioms, niche jargon, and content needing cultural explanation. If the level is unset, assume B1-B2.
+- **Goals:** for a goal of confident, grammatically correct communication, give each question one clear target structure (record it in `--structures`) and rotate grammar areas across days: tense and aspect, conditionals, modals, passive voice, prepositions, articles and countability, word order, relative clauses, reported speech, phrasal verbs and collocations. Weight areas by `weak_patterns.md` and recent errors. Make the situation and tone fit the topic (neutral-professional for work, relaxed for daily life).
+- **Clear source:** Vietnamese often leaves number, tense, and articles implicit. Add context (a time word, a quantity, who or what is meant) so one natural English version is clearly intended, rather than relying on the assessment rule that accepts reasonable readings.
 - Rotate topics: avoid reusing the topic of the previous new item when alternatives exist, and check the `Topic` column of the current month's `sentences/` file to avoid near-duplicates.
 - When there are real earlier sentences with observed errors, use 1-2 of the planned new slots for transfer: test the same structure in a different Vietnamese sentence and context. Prefer recurring patterns (count at least 2). These replace ordinary new slots, not add extra questions. If no real earlier source exists, use ordinary new questions instead.
 - Do not reveal the target structure or the old answer before the response. A transfer item is a new sentence with a new ID; succeeding on it is not a successful review of the original sentence and must not change the original schedule. After assessing it, save its real earlier source as a related-sentence link in the bank. Do not invent a link if the intended source cannot be established.
-- Raise difficulty gradually when most recent results are "correct and natural"; keep it steady otherwise.
+- Raise difficulty gradually when most recent results are "correct and natural"; keep it steady otherwise. Within the profile level, use the lower end (B1 structures, shorter sentences) after sessions with mostly incorrect new answers, and move toward B2 (longer, multi-clause sentences) when new answers are mostly correct. Do not drop below the profile level or leave the profile topics because of errors.
 - Append the `sentences/` row only after the sentence has actually been presented and assessed.
 
 ## Choose reviews
@@ -161,7 +178,7 @@ python -B scripts/learning_records.py record --date YYYY-MM-DD --sentence <ID> -
 
 - `--result`: `correct` (correct and natural), `uncertain` (correct but less natural/uncertain), `incorrect`.
 - `--answer`: the learner's exact answer. `--note`: the short error explanation (about 20 words), or `-` when correct.
-- New sentences also require `--standard`, `--structures`, and `--topic`; the Vietnamese text is taken from the plan.
+- New sentences also require `--standard`, `--structures`, and `--topic`; the Vietnamese text is taken from the plan. Set `--topic` to the profile topic's title (for example `Travel and transport`), optionally followed by ` – ` and a short situation, so topic counts stay consistent.
 - `--related`: only for an assessed transfer item; the real earlier source sentence it tests. The link never changes the source sentence's counts or schedule.
 - `--pattern`: once per observed error, for incorrect or uncertain answers only. Use exactly one category name from `data/pattern_categories.md` (also listed in the `status` output); the script rejects any other text. Put the specific detail of the mistake in `--note`. If no category fits and the error is clearly a distinct kind, run `python -B scripts/learning_records.py add-category --date YYYY-MM-DD --name <lowercase-words-with-hyphens> --description <one sentence>` first and tell the learner; otherwise pick the closest existing category.
 - The script accepts only the next unassessed plan row, updates every related record, and validates. Read its JSON output. If `ok` is false, nothing was written: fix the cause and do not present the next question until the answer is saved.
@@ -181,4 +198,13 @@ After all saved lesson rows have been assessed, state the number of new and revi
 
 Include the updated streak in the Vietnamese summary: "Streak hien tai: X ngay lien tiep. Ky luc: Y ngay." Display the actual values from the `complete` output, not example numbers.
 
-Do not commit or push unless the learner explicitly asks.
+## Commit and push
+
+After the completion summary, if this is a git repository:
+
+1. Commit the session without asking, because the learner has approved it in advance: `git add -- data logs`, then `git commit -m "Session YYYY-MM-DD"`. Stage only `data/` and `logs/`; if other files are changed, leave them and say so. If there is nothing to commit (for example, an interrupted run already committed), skip the commit. Report the commit. If the commit fails, report the error; do not use `--no-verify` or change git config.
+2. If the branch now has unpushed commits (`git rev-list --count '@{u}..HEAD'` above 0), end the message by asking whether to push to GitHub, then stop and wait. Run `git push` only after the learner clearly says yes. With no upstream, say so and ask before running `git push -u origin <current branch>`.
+3. If the learner declines or does not answer, do not push; the next `start-english` will mention the unpushed commits. If a push is rejected or fails, report it and suggest `git pull --ff-only`; never force-push.
+4. If there is nothing to push, say that everything is already on GitHub.
+
+Never push without the learner's explicit confirmation in the current conversation.

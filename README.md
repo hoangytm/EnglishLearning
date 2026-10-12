@@ -61,7 +61,7 @@ The two thin entry-point Skills (`.agents/skills/start-english`, `.agents/skills
 - `.agents/skills/english-coach/SKILL.md`: the assistant workflow (single source of truth for the rules).
 - `.agents/skills/start-english/` and `.agents/skills/english-progress/`: entry points for both hosts (`/start-english`, `/english-progress` in Copilot; `$start-english`, `$english-progress` in Codex) that delegate to `english-coach`.
 
-Learning data is stored only in the Markdown records above and versioned with git; each completed session is committed locally.
+Learning data is stored only in the Markdown records above and versioned with git. `start-english` first runs `git status` (it asks before committing any local changes) and then `git pull --ff-only`. When a session is completed, its `data/` and `logs/` changes are committed and you are asked whether to push to GitHub; nothing is pushed without your yes.
 
 ## Note
 

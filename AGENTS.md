@@ -31,5 +31,6 @@ The session flow, resume check, grading, spaced-repetition levels, and data-upda
 - A generated lesson plan is not learning history: save questions without answers or hints, and record study results only after a real learner response has been assessed.
 - Run the Skill's read-only validator at its required checkpoints. Report failures honestly; never modify immutable history or invent results to make validation pass.
 - Write learning records only through `scripts/learning_records.py`; do not hand-edit history, sentence bank, schedule, weak patterns, log, or streak files.
+- Git follows the Skill: `start-english` checks status (asking before committing local changes) and pulls with `--ff-only`; a completed session's `data/` and `logs/` are committed, and pushing happens only after the learner explicitly confirms. Never force-push, reset, stash, or discard changes.
 - Seeing an answer does not count as knowing it.
 - Use UTF-8 Markdown and keep every existing ID unique and unchanged.
