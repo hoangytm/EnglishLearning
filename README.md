@@ -4,7 +4,9 @@ Personal English-learning workspace based on Active Recall and Spaced Repetition
 
 ## Start learning
 
-Type `/start-english` in Copilot Chat, or ask: “Start an English learning session.” A session has 17 questions with a flexible split, one at a time. Reviews come first: up to 14 distinct due-or-weak sentences (due sentences first; retained sentences are not reviewed early just to fill the quota). Unused review slots become new sentences, with at least 3 new, so 10 reviews give 7 new, 3 reviews give 14 new, and no reviews give 17 new. No confirmation is needed. Existing saved lessons keep their original targets. No model answer is shown before you respond. An unfinished session is resumed automatically on the same day.
+Type `/start-english` in Copilot Chat, or ask: “Start an English learning session.” A new session has 20 questions, one at a time: 3 new and up to 17 distinct due reviews. If fewer than 17 reviews are due, unused review slots become new sentences, so 10 due reviews give 10 new, and no due reviews give 20 new. Do not fill review slots with not-yet-due sentences, even weak ones. Due reviews are selected by oldest due date, then lowest level; questions are presented new first, then reviews. No model answer is shown before you respond.
+
+Use `/start-english --weekend` for 30 questions: at least 5 new and up to 25 due reviews, with any review shortage becoming new sentences. The flag works on any day; weekends do not enable it automatically. In chat, `-- weekend` is also accepted. No confirmation is needed for either split. Existing saved lessons keep their original targets and mode, even if you resume with a different flag; an unfinished session is resumed automatically on the same day.
 
 Before the first sentence, the assistant prepares and saves the complete question plan in `data/history/lessons/YYYY-MM-DD.md`. The plan contains no answers or hints and is reused on resume; assessed answer history determines progress. Preparation does not count as studying. This batches question preparation up front, but feedback and saving results still take place after each answer.
 
@@ -19,6 +21,7 @@ Both hosts use root `AGENTS.md` and `.agents/skills/english-coach/SKILL.md`; no 
 | Action | Copilot in VS Code | Codex CLI or IDE |
 | --- | --- | --- |
 | Start or resume | `/start-english` | `$start-english` |
+| Start with weekend mode | `/start-english --weekend` | `$start-english --weekend` |
 | Weekly progress | `/english-progress` | `$english-progress` |
 
 Plain-text `start-english` and `english-progress` requests work through the shared instructions as well. If automatic Skill discovery is disabled or unavailable, explicitly ask the agent to read `AGENTS.md` and `.agents/skills/english-coach/SKILL.md` and follow the desired workflow. Mentioning commands in a project-maintenance request does not start practice.
@@ -35,6 +38,7 @@ Python 3.9+ is required for automated checks; there are no third-party dependenc
 python -B scripts/validate_learning.py --date 2026-10-11
 python -B scripts/validate_learning.py --date 2026-10-11 --require-complete
 python -B scripts/validate_learning.py --date 2026-10-11 --report
+python -B scripts/validate_learning.py --date 2026-10-11 --report --weekend
 python -B scripts/learning_records.py status --date 2026-10-11
 python -B -m unittest discover -s scripts -p "test_*.py" -v
 ```
@@ -45,7 +49,7 @@ Replace the example date with the learner's local date. The validator checks IDs
 
 Use `/english-progress` in Copilot or `$english-progress` in Codex to report weekly progress. Reports compare the last 7 days with the preceding 7 days, separate new and review results with denominators, show backlog, and explain evidence limits. Reports are read-only and do not create files. No review attempts means unknown recall, not a 0% recall score.
 
-The two thin entry-point Skills (`.agents/skills/start-english`, `.agents/skills/english-progress`) only select the shared workflow; they do not duplicate its rules. Both hosts read them from `.agents/skills/`, so they provide `/...` commands in Copilot and `$...` commands in Codex; there are no separate Copilot prompt files. `$english-coach` still works directly. Automated checks are explicit workflow commands, not host-specific enforced hooks. Passing the script tests establishes local data/CLI compatibility, not proof that either AI host will obey every instruction in a complete session.
+The two thin entry-point Skills (`.agents/skills/start-english`, `.agents/skills/english-progress`) only select the shared workflow and forward arguments; they do not duplicate its rules. Both hosts read them from `.agents/skills/`, so they provide `/...` commands in Copilot and `$...` commands in Codex; there are no separate Copilot prompt files. `$english-coach` still works directly, including `$english-coach start-english --weekend`. Automated checks are explicit workflow commands, not host-specific enforced hooks. Passing the script tests establishes local data/CLI compatibility, not proof that either AI host will obey every instruction in a complete session.
 
 ## Data structure
 

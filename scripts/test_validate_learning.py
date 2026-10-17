@@ -170,13 +170,33 @@ class LearningValidationTests(unittest.TestCase):
 
     def test_flexible_proposal_shifts_unused_review_slots_to_new(self):
         row = {'Sentence ID': 'S-20261001-001', 'Next review': '2026-10-10', 'Level': '0', 'Latest result': 'incorrect'}
-        expected = {0: (17, 0), 10: (7, 10), 14: (3, 14), 30: (3, 14)}
+        expected = {0: (20, 0), 10: (10, 10), 17: (3, 17), 30: (3, 17)}
         for count, (new, reviews) in expected.items():
             self.data['schedule'] = [dict(row, **{'Sentence ID': f'S-20261001-{index:03}'}) for index in range(1, count + 1)]
             proposal = progress_report(self.data, TODAY)['quota_proposal']
-            self.assertEqual({'new': new, 'reviews': reviews, 'policy': 'flexible-17'}, proposal, count)
+            self.assertEqual({'new': new, 'reviews': reviews, 'policy': 'standard-20'}, proposal, count)
 
-    def flexible_day(self, older, new_count):
+    def test_weekend_proposal_reserves_five_new_and_fills_shortages(self):
+        row = {'Next review': '2026-10-10', 'Level': '0', 'Latest result': 'incorrect'}
+        for count, (new, reviews) in {0: (30, 0), 10: (20, 10), 25: (5, 25), 40: (5, 25)}.items():
+            self.data['schedule'] = [dict(row, **{'Sentence ID': f'S-20261001-{index:03}'}) for index in range(1, count + 1)]
+            proposal = progress_report(self.data, TODAY, weekend=True)['quota_proposal']
+            self.assertEqual({'new': new, 'reviews': reviews, 'policy': 'weekend-30'}, proposal, count)
+
+    def test_new_quota_candidates_include_only_earlier_due_sentences(self):
+        self.data['schedule'] = [
+            {'Sentence ID': 'S-20261001-001', 'Next review': '2026-10-10', 'Level': '2', 'Latest result': 'correct'},
+            {'Sentence ID': 'S-20261001-002', 'Next review': '2026-10-12', 'Level': '0', 'Latest result': 'incorrect'},
+            {'Sentence ID': 'S-20261001-003', 'Next review': '2026-10-11', 'Level': '1', 'Latest result': 'uncertain'},
+            {'Sentence ID': 'S-20261011-001', 'Next review': '2026-10-11', 'Level': '0', 'Latest result': 'incorrect'},
+        ]
+        for weekend, total in ((False, 20), (True, 30)):
+            report = progress_report(self.data, TODAY, weekend=weekend)
+            self.assertEqual(['S-20261001-001', 'S-20261001-003'], report['review_candidate_ids'])
+            self.assertEqual(total - 2, report['quota_proposal']['new'])
+            self.assertEqual(2, report['quota_proposal']['reviews'])
+
+    def flexible_day(self, older, new_count, policy='flexible-17', capacity=14):
         self.data['logs'] = []
         self.data['streak'] = [streak_snapshot([], TODAY)]
         keep = min(new_count, 7)
@@ -191,16 +211,41 @@ class LearningValidationTests(unittest.TestCase):
             self.data['attempts'].append(attempt)
             self.data['schedule'].append(dict(project_schedule([attempt]), **{'Sentence ID': identifier}))
         self.data['schedule'].sort(key=lambda row: (row['Next review'], row['Sentence ID']))
-        review_count = min(14, older)
+        review_count = min(capacity, older)
         for number in range(1, review_count + 1):
             reviews.append(dict(zip(PLAN_COLUMNS, (str(new_count + number), 'review', f'S-20261001-{number:03}', f'Old {number}'))))
         news = [dict(zip(PLAN_COLUMNS, (str(number), 'new', f'S-20261011-{number:03}', f'Question {number}')))
                 for number in range(1, new_count + 1)]
         plan = self.data['plans'][TODAY]
         plan.update({'New target': str(new_count), 'Review target': str(review_count),
-                     'Unavailable reviews': str(14 - review_count), 'Review selection': 'due-and-weak',
-                     'Quota policy': 'flexible-17', 'rows': news + reviews})
+                     'Unavailable reviews': str(capacity - review_count),
+                     'Review selection': 'due-and-weak' if policy == 'flexible-17' else 'due-only',
+                     'Quota policy': policy, 'rows': news + reviews})
         return plan
+
+    def test_standard_and_weekend_plans_validate_and_load(self):
+        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25)):
+            for older in (0, 10, capacity, 40):
+                self.setUp()
+                self.flexible_day(older, total - min(capacity, older), policy, capacity)
+                self.assertEqual([], validate(self.data, TODAY)[0], (policy, older))
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    write_fixture(root, self.data)
+                    loaded = load_data(root)
+                    self.assertEqual(self.data['plans'], loaded['plans'])
+                    self.assertEqual([], validate(loaded, TODAY)[0])
+
+    def test_new_policies_reject_wrong_split_or_early_review_selection(self):
+        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25)):
+            for offset in (-1, 1):
+                self.setUp()
+                self.flexible_day(40, total - capacity + offset, policy, capacity)
+                self.assertTrue(any('invalid targets' in error for error in validate(self.data, TODAY)[0]))
+            self.setUp()
+            plan = self.flexible_day(40, total - capacity, policy, capacity)
+            plan['Review selection'] = 'due-and-weak'
+            self.assertTrue(any('invalid targets' in error for error in validate(self.data, TODAY)[0]))
 
     def test_flexible_plan_balances_new_and_reviews(self):
         for older, new_count in ((0, 17), (10, 7), (14, 3), (30, 3)):
@@ -272,6 +317,20 @@ class LearningValidationTests(unittest.TestCase):
             self.assertEqual(7, report['report']['current_week']['new']['attempts'])
             self.assertEqual(before, {path: path.read_bytes() for path in root.rglob('*.md')})
 
+    def test_cli_weekend_flag_is_opt_in_and_preserves_saved_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_fixture(root, self.data)
+            before = {path: path.read_bytes() for path in root.rglob('*.md')}
+            base = [sys.executable, '-B', str(ROOT / 'scripts/validate_learning.py'),
+                    '--root', str(root), '--date', str(TODAY), '--report']
+            for flags, total, policy in (([], 20, 'standard-20'), (['--weekend'], 30, 'weekend-30')):
+                result = subprocess.run(base + flags, capture_output=True, text=True, check=False)
+                self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+                proposal = json.loads(result.stdout)['report']['quota_proposal']
+                self.assertEqual({'new': total, 'reviews': 0, 'policy': policy}, proposal)
+            self.assertEqual(before, {path: path.read_bytes() for path in root.rglob('*.md')})
+
     def test_cli_default_root_from_unrelated_directory_with_spaces(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / 'shared learning workspace'
@@ -298,12 +357,19 @@ class LearningValidationTests(unittest.TestCase):
         self.assertIn('$english-coach start-english', instructions)
         self.assertIn('$english-coach english-progress', instructions)
         self.assertIn('## Portable runtime', skill)
+        self.assertIn('Quota policy: standard-20', skill)
+        self.assertIn('Quota policy: weekend-30', skill)
+        self.assertIn('Review selection: due-only', skill)
+        self.assertIn('--report`, adding `--weekend`', skill)
+        self.assertIn('optional `--weekend`', instructions)
         for name in ('start-english', 'english-progress'):
             entry = (ROOT / f'.agents/skills/{name}/SKILL.md').read_text(encoding='utf-8')
             self.assertIn(f'name: {name}', entry)
             self.assertIn(f'Request: `{name}`.', entry)
             self.assertIn(skill_path, entry)
             self.assertIn('in full', entry)
+            if name == 'start-english':
+                self.assertIn('Forward any supplied `--weekend`', entry)
         self.assertFalse((ROOT / '.github/prompts').exists())
 
     def test_link_table_roundtrip_and_outside_plan_answer(self):

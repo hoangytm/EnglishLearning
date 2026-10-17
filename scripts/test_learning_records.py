@@ -140,6 +140,45 @@ class LearningRecordsTests(unittest.TestCase):
             complete_session(self.root, NEXT)
         self.assertEqual(before, snapshot(self.root))
 
+    def test_new_quota_sessions_resume_and_complete_with_saved_targets(self):
+        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25)):
+            with self.subTest(policy=policy), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                data = sample_data()
+                due_ids = REVIEW_IDS[:6]
+                new_ids = [f'S-20261012-{number:03}' for number in range(1, total - len(due_ids) + 1)]
+                plan = plan_for(NEXT, new_ids, due_ids)
+                plan.update({'New target': str(len(new_ids)), 'Unavailable reviews': str(capacity - len(due_ids)),
+                             'Review selection': 'due-only', 'Quota policy': policy})
+                data['plans'][NEXT] = plan
+                write_fixture(root, data)
+                plan_path = root / f'data/history/lessons/{NEXT}.md'
+                saved_plan = plan_path.read_bytes()
+                for index, identifier in enumerate(new_ids, 1):
+                    output = record_attempt(root, NEXT, identifier, 'new', f'Answer {index}', 'correct',
+                                            standard=f'Answer {index}', structures='example', topic='work')
+                    self.assertEqual(f'{index}/{total}', output['progress'])
+                    state = session_status(root, NEXT)
+                    self.assertTrue(state['ok'])
+                    self.assertEqual({'new': len(new_ids), 'review': len(due_ids),
+                                      'unavailable_reviews': capacity - len(due_ids)}, state['plan']['targets'])
+                    self.assertEqual(index, state['plan']['done']['new'])
+                before = snapshot(root)
+                with self.assertRaisesRegex(RecordError, 'not all planned'):
+                    complete_session(root, NEXT)
+                self.assertEqual(before, snapshot(root))
+                for identifier in due_ids:
+                    output = record_attempt(root, NEXT, identifier, 'review', 'Review answer', 'correct')
+                self.assertEqual(f'{total}/{total}', output['progress'])
+                result = complete_session(root, NEXT)
+                self.assertTrue(result['ok'])
+                self.assertEqual((str(len(new_ids)), str(len(due_ids))),
+                                 (result['log']['New'], result['log']['Reviews']))
+                self.assertEqual('2', result['streak']['Current streak'])
+                self.assertEqual(saved_plan, plan_path.read_bytes())
+                self.assertEqual([], validate(load_data(root), NEXT, require_complete=True)[0])
+                self.assertTrue(complete_session(root, NEXT)['already_completed'])
+
     def test_refresh_streak_after_gap_and_new_month_files(self):
         later = date(2026, 11, 1)
         data = load_data(self.root)

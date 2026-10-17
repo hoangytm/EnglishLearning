@@ -24,6 +24,13 @@ CATEGORY_NAME = re.compile(r'[a-z]+(-[a-z]+)*')
 DAILY_TOTAL = 17
 MAX_REVIEWS = 14
 FLEXIBLE_POLICY = 'flexible-17'
+DEFAULT_POLICY = 'standard-20'
+WEEKEND_POLICY = 'weekend-30'
+QUOTA_POLICIES = {
+    FLEXIBLE_POLICY: (DAILY_TOTAL, MAX_REVIEWS, 'due-and-weak'),
+    DEFAULT_POLICY: (20, 17, 'due-only'),
+    WEEKEND_POLICY: (30, 25, 'due-only'),
+}
 INTERVALS = (1, 3, 7, 14, 30, 60)
 RESULTS = ('correct', 'incorrect', 'uncertain')
 
@@ -157,13 +164,13 @@ def load_data(root):
             if len(values) != 1:
                 raise DataError(f'{path}: expected one {name} field')
             fields[name] = values[0].strip()
-        for name, allowed in (('Review selection', 'due-and-weak'), ('Quota adjustment approved', 'yes'),
-                              ('Quota policy', FLEXIBLE_POLICY)):
+        for name, allowed in (('Review selection', ('due-and-weak', 'due-only')),
+                              ('Quota adjustment approved', ('yes',)), ('Quota policy', tuple(QUOTA_POLICIES))):
             values = re.findall(rf'^- {re.escape(name)}: (.+)$', text, re.MULTILINE)
-            if values and (len(values) != 1 or values[0].strip() != allowed):
+            if values and (len(values) != 1 or values[0].strip() not in allowed):
                 raise DataError(f'{path}: invalid {name} field')
             if values:
-                fields[name] = allowed
+                fields[name] = values[0].strip()
         if fields['Lesson date'] != path.stem:
             raise DataError(f'{path}: lesson date differs from filename')
         allowed_lines = {f'# Lesson {path.stem}', *(f'- {name}: {value}' for name, value in fields.items())}
@@ -281,10 +288,13 @@ def validate(data, today, require_complete=False, allow_stale_streak=False):
                           for identifier, attempts in grouped.items()
                           if (prior := [row for row in attempts if id_date(row['Attempt'], 'A') < lesson_date])]
         prior_due, candidates = review_candidates(prior_schedule, lesson_date)
-        selectable = {row['Sentence ID'] for row in candidates} if plan.get('Review selection') else eligible
+        selection = plan.get('Review selection')
+        pool = prior_due if selection == 'due-only' else candidates
+        selectable = {row['Sentence ID'] for row in pool} if selection else eligible
         if plan.get('Quota policy'):
-            if not (plan.get('Review selection') and review_target == min(MAX_REVIEWS, len(selectable))
-                    and missing == MAX_REVIEWS - review_target and new_target == DAILY_TOTAL - review_target):
+            total, capacity, required_selection = QUOTA_POLICIES[plan['Quota policy']]
+            if not (selection == required_selection and review_target == min(capacity, len(selectable))
+                    and missing == capacity - review_target and new_target == total - review_target):
                 errors.append(f'lesson {lesson_date}: invalid targets or unavailable-review count')
         else:
             capacity = review_target + missing
@@ -354,7 +364,7 @@ def validate(data, today, require_complete=False, allow_stale_streak=False):
     return errors, warnings
 
 
-def progress_report(data, today):
+def progress_report(data, today, weekend=False):
     def period(start, end):
         attempts = [row for row in data['attempts'] if start <= id_date(row['Attempt'], 'A') <= end]
         stats = {}
@@ -370,7 +380,10 @@ def progress_report(data, today):
         return stats
 
     start = today - timedelta(days=6)
-    due, candidates = review_candidates(data['schedule'], today)
+    due, _ = review_candidates(data['schedule'], today)
+    policy = WEEKEND_POLICY if weekend else DEFAULT_POLICY
+    total, capacity, _ = QUOTA_POLICIES[policy]
+    review_target = min(capacity, len(due))
     return {
         'as_of': str(today), 'current_week': period(start, today),
         'previous_week': period(start - timedelta(days=7), start - timedelta(days=1)),
@@ -378,9 +391,8 @@ def progress_report(data, today):
         'due_count': len(due),
         'overdue_count': sum(date.fromisoformat(row['Next review']) < today for row in due),
         'due_ids': [row['Sentence ID'] for row in due],
-        'review_candidate_ids': [row['Sentence ID'] for row in candidates],
-        'quota_proposal': {'new': DAILY_TOTAL - min(MAX_REVIEWS, len(candidates)),
-                           'reviews': min(MAX_REVIEWS, len(candidates)), 'policy': FLEXIBLE_POLICY},
+        'review_candidate_ids': [row['Sentence ID'] for row in due],
+        'quota_proposal': {'new': total - review_target, 'reviews': review_target, 'policy': policy},
         'related_sentence_links': data['links'],
         'limitations': ['No study-duration measurements.', 'Notes describe attempts, not stable error categories.',
                         'Weak-pattern snapshots cannot prove weekly improvement; use actual attempt evidence.'],
@@ -393,6 +405,7 @@ def main():
     parser.add_argument('--date', type=date.fromisoformat, default=date.today(), help='Learner local date, YYYY-MM-DD')
     parser.add_argument('--require-complete', action='store_true', help='Require every row of today\'s plan to have a real assessed attempt')
     parser.add_argument('--report', action='store_true', help='Print JSON metrics for the last 7 days and preceding 7 days')
+    parser.add_argument('--weekend', action='store_true', help='Propose 30 questions with at least 5 new instead of 20 with at least 3 new')
     args = parser.parse_args()
     try:
         data = load_data(args.root)
@@ -403,7 +416,7 @@ def main():
     if args.report:
         output = {'valid': not errors, 'errors': errors, 'warnings': warnings}
         if not errors:
-            output['report'] = progress_report(data, args.date)
+            output['report'] = progress_report(data, args.date, weekend=args.weekend)
         print(json.dumps(output, ensure_ascii=True, indent=2))
     else:
         for issue in errors:

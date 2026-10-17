@@ -1,6 +1,6 @@
 ---
 name: english-coach
-description: "Prepare a saved daily Vietnamese-to-English lesson of 17 questions with a flexible split of new and review sentences (reviews first, at least 3 new); validate learning records, practise transfer, and report weekly progress or recurring errors without starting practice."
+description: "Prepare a saved Vietnamese-to-English lesson of 20 questions (at least 3 new), or 30 with --weekend (at least 5 new), prioritising due reviews; validate records, practise transfer, and report progress without starting practice."
 ---
 
 # English Coach
@@ -9,7 +9,7 @@ Use this skill for daily English-learning sessions, Vietnamese-to-English transl
 
 ## Portable runtime
 
-- This is the shared workflow for Codex and GitHub Copilot, not a host-specific agent. `start-english` selects learning; `english-progress` selects read-only reporting. The `start-english` and `english-progress` entry-point Skills only select a workflow; they add no rules.
+- This is the shared workflow for Codex and GitHub Copilot, not a host-specific agent. `start-english` selects learning; `english-progress` selects read-only reporting. The entry-point Skills only select a workflow and forward arguments; they add no rules.
 - Locate the workspace root containing `AGENTS.md` and `scripts/validate_learning.py`. Paths in this Skill are relative to that root. Use native tools available in the host, not a hard-coded Copilot or Codex tool API. Writing learning records requires workspace write permission; validation requires permission to execute Python. If the host blocks an operation, explain what permission is missing and stop that operation. Do not bypass sandbox restrictions, request secrets through chat, or claim a blocked operation succeeded.
 - Select one available Python 3.9+ launcher and use it consistently for every command in this workflow: `python` or `py -3` on Windows, `python3` or `python` on Linux/macOS/WSL. Check its version first. A launcher that exists but is too old does not qualify; try another available launcher before reporting Python unavailable. The command examples below use `python` as a placeholder for the selected launcher.
 - Run from the workspace root when possible. Otherwise, pass the quoted absolute script path and `--root` pointing to the same workspace, for example `<launcher> -B "<workspace>/scripts/validate_learning.py" --root "<workspace>" --date YYYY-MM-DD`. The script's default root is its own workspace, not the terminal's current directory. Quote paths containing spaces and use syntax appropriate to the active shell; do not assume PowerShell, Bash, or a Windows drive path.
@@ -66,11 +66,12 @@ For `start-english` and any daily-session start, do this before reading learning
 
 ## Start or resume the session
 
-- When the user starts a daily session (for example, "start today's lesson", "help me study English", or "start today's 17 questions"), first complete **Sync with git before learning**, then read before asking anything: `learner_profile.md`, `weak_patterns.md`, `pattern_categories.md`, `streak.md`, the last rows of `daily_log.md`, the top of `review_schedule.md` (rows due up to today plus a few after), and the current month's `sentences/` and `history/` files. Run `refresh-streak` first, so a missed day is reflected before learning starts.
+- When the user starts a daily session (for example, "start today's lesson", "help me study English", or "start today's 20 questions"), first complete **Sync with git before learning**, then read before asking anything: `learner_profile.md`, `weak_patterns.md`, `pattern_categories.md`, `streak.md`, the last rows of `daily_log.md`, the top of `review_schedule.md` (rows due up to today plus a few after), and the current month's `sentences/` and `history/` files. Run `refresh-streak` first, so a missed day is reflected before learning starts.
+- Recognise `start-english --weekend` in either host (including `/start-english --weekend`, `$start-english --weekend`, and `$english-coach start-english --weekend`). In chat, also accept `-- weekend` as `--weekend`. This explicitly selects the 30-question mode for a new plan on any calendar day; never enable it just because today is Saturday or Sunday. Without the flag, use the 20-question mode.
 - Do not read older month files in full. Search them by ID only when a review needs a sentence's text or previous answers.
 - If today's session is already recorded as completed in `daily_log.md`, report that it is complete rather than regenerating a lesson or recording another completion.
 - If the learner profile is unset, use the default work-communication context to prepare the lesson without blocking its creation. Offer to fill in the profile later; record only what the learner states.
-- Before creating a new plan, run the report command to obtain `review_candidate_ids` and `quota_proposal` (the new and review counts for today). No confirmation is needed for the split. Do not alter a plan that already exists or an already-started day.
+- Before creating a new plan, run `python -B scripts/validate_learning.py --date YYYY-MM-DD --report`, adding `--weekend` only when requested, to obtain `review_candidate_ids` and `quota_proposal`. No confirmation is needed for the split. If a plan already exists, reuse its saved mode, counts, and order regardless of the current flag; explain a differing request without rewriting the plan or adding questions. Do not alter an already-started day.
 - Prepare or reuse today's saved lesson using the rules below. **Resume check:** run `python -B scripts/learning_records.py status --date YYYY-MM-DD`. It reports completed counts against the saved targets and the next unassessed plan row (order, type, sentence ID); read that row's Vietnamese text from the plan file.
 - Follow the saved order and targets: all planned new sentences first, then the planned reviews. Present exactly one Vietnamese sentence at a time and wait for the English response. Do not reveal a model translation, keywords, or hints that undermine recall.
 
@@ -81,8 +82,9 @@ For `start-english` and any daily-session start, do this before reading learning
 - If no plan exists but today's assessed attempts already exist, reconstruct their question rows from the real sentence bank and history first, retaining their IDs and type. Include these completed rows in the targets, then fill only the remaining slots. Do not restart a partially completed day.
 - Reserve unique `S-YYYYMMDD-NNN` IDs for planned new sentences, checking both the sentence bank and existing lesson plans for collisions. A reserved ID does not mean the sentence has been studied. Reuse its exact ID and Vietnamese text when it is later assessed.
 - Choose all new questions using the new-sentence rules below, checking for near-duplicates both in the bank and within the planned batch. The validator rejects an exact repeat of any earlier or planned Vietnamese sentence (ignoring case, punctuation, and spacing); near-duplicates remain your judgment, so search older month files by key words as well. Choose reviews only from real assessed sentences using the review rules below; never from an unassessed draft plan.
-- Every new plan has 17 questions with a flexible split. Reviews have priority: `Review target` = the smaller of 14 and the distinct due-or-weak review pool at the start of the day. `New target` = 17 minus `Review target`, so unused review slots go to new sentences and there are always at least 3 new (3 to 17). Set `Unavailable reviews` to 14 minus `Review target`. Freeze the targets for this session, even if the schedule later changes after answers.
-- Add `Review selection: due-and-weak` and `Quota policy: flexible-17` to new plans; the validator rejects any other split. To reconstruct an already-started day without a plan, keep 7 + 10 and the legacy all-earlier-sentences policy rather than retroactively applying the new rules; leave both optional fields absent and retain its real attempts. Older saved plans (7 + 10 or an approved 5 + 12) stay valid and unchanged.
+- Every new default plan has 20 questions: reserve 3 new slots and fill up to 17 review slots from distinct sentences due at the start of the day. `Review target` = min(17, due pool size); `New target` = 20 minus `Review target`; `Unavailable reviews` = 17 minus `Review target`. With enough due sentences, use exactly 3 new and 17 reviews. If reviews are insufficient, their unused slots become new sentences.
+- For an explicitly requested `--weekend` plan, use 30 questions: `Review target` = min(25, due pool size); `New target` = 30 minus `Review target`; `Unavailable reviews` = 25 minus `Review target`. This guarantees at least 5 new (exactly 5 when 25 or more reviews are due). Freeze either mode's targets for this session, even if the schedule later changes after answers.
+- Add `Review selection: due-only` and `Quota policy: standard-20` (default) or `Quota policy: weekend-30` (with the flag) to new plans; use the report's exact split. To reconstruct an already-started day without a plan, keep 7 + 10 and the legacy all-earlier-sentences policy rather than retroactively applying the new rules; leave both optional fields absent and retain its real attempts. Older saved plans (7 + 10, an approved 5 + 12, or `flexible-17` with `due-and-weak`) stay valid and unchanged.
 - Store the date, targets, and an ordered table with columns `Order | Type | Sentence ID | Vietnamese`. Use `new` or `review` for `Type`. Do not store English translations, structures, learner answers, results, or explanations in the plan. Do not show the full question list in chat; only present the current sentence.
 - Run the validator on the saved plan; do not start an invalid or incomplete plan. It checks order, unique IDs, row counts, new-before-review order, review eligibility, and that reconstructed rows match the existing history.
 - Preparation alone must not add learning records or increase the streak. Only assessed answers trigger learning-data updates.
@@ -93,11 +95,11 @@ Plan format (placeholders below describe the schema, not learning records):
 # Lesson YYYY-MM-DD
 
 - Lesson date: YYYY-MM-DD
-- New target: <17 minus review target; at least 3>
-- Review target: <review pool capped at 14>
-- Unavailable reviews: <14 minus review target>
-- Review selection: due-and-weak
-- Quota policy: flexible-17
+- New target: <total minus review target; at least 3, or 5 with --weekend>
+- Review target: <due pool capped at 17, or 25 with --weekend>
+- Unavailable reviews: <review capacity minus review target>
+- Review selection: due-only
+- Quota policy: <standard-20 or weekend-30>
 
 | Order | Type | Sentence ID | Vietnamese |
 | --- | --- | --- | --- |
@@ -121,7 +123,7 @@ Plan format (placeholders below describe the schema, not learning records):
 - Eligible: sentences whose ID date is before today. Never present a current-session new item as a review.
 - Review each sentence at most once per daily session. On resume, skip sentence IDs already assessed as reviews today; those attempts count toward the planned review target.
 - For new plans, select all due items first: `Next review` on or before the lesson date, oldest date first, then lowest level; recurring weak patterns can break further ties. Do not skip a due sentence merely because it was studied yesterday.
-- Fill remaining slots only with earlier sentences at level 0 or 1, or with latest result `incorrect`/`uncertain`, prioritising low levels and recurring weak patterns. Do not review a retained level-2-or-higher correct sentence early just to fill the quota. If the due-or-weak pool is smaller than 14, save the reduced review target; the unused slots become new sentences. Use the state before today's attempts when reconstructing targets.
+- For new plans, select only sentences whose `Next review` is on or before the lesson date. Do not fill review slots with not-yet-due sentences, even if their level is 0 or 1 or their latest result is `incorrect`/`uncertain`. If fewer than 17 (default) or 25 (`--weekend`) are due, save the reduced review target and turn the shortage into new sentences. Use the state before today's attempts when reconstructing targets. Resume older saved plans under their original selection policy.
 - Get the Vietnamese text and standard version from the sentence's month file by searching its ID. Copy only the Vietnamese text into the plan; retrieve the standard version for feedback after the learner answers.
 - Review every planned distinct row, tell the learner how many review slots became new sentences (`Unavailable reviews`), and do not manufacture records or repeat sentences to fill the quota.
 

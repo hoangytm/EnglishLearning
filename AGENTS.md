@@ -18,7 +18,7 @@ The session flow, resume check, grading, spaced-repetition levels, and data-upda
 ## Shared entry points
 
 - Both Codex and GitHub Copilot use this root `AGENTS.md` and the same `.agents/skills/english-coach/SKILL.md`. For a learning or progress request, read that Skill file in full even if the host has not automatically discovered or activated it.
-- `start-english` means start or resume the learning workflow. `english-progress` means the read-only progress workflow, not translation practice. Recognise these plain-text requests in either host; merely discussing or editing these commands does not start a session.
+- `start-english` means start or resume the learning workflow; forward an optional `--weekend` argument to the shared Skill. `english-progress` means the read-only progress workflow, not translation practice. Recognise these plain-text requests in either host; merely discussing or editing these commands does not start a session.
 - The thin Skills `.agents/skills/start-english` and `.agents/skills/english-progress` delegate to `english-coach` and are the entry points in both hosts: `/start-english` and `/english-progress` in Copilot, `$start-english` and `$english-progress` in Codex. `$english-coach start-english` and `$english-coach english-progress` also work.
 - Use the current host's native file-reading, editing, and terminal tools. Resolve all workspace-relative paths from the folder containing this file, not from the Skill folder or an unrelated current directory. Follow the Skill's portable-runtime rules.
 - Only one agent may write learning data at a time. When changing hosts, reread the saved plan and actual assessed history before continuing; do not generate a parallel lesson or infer unsaved answers from another host's chat.
