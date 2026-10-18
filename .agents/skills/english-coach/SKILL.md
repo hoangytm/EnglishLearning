@@ -26,7 +26,7 @@ Learning records are Markdown tables, one row per record. Dates are encoded in I
 - `data/pattern_categories.md`: the fixed list of error categories; `--pattern` accepts only these names.
 - `data/sentences/YYYY-MM.md`: one immutable row per sentence first studied that month.
 - `data/history/YYYY-MM.md`: append-only, one row per assessed attempt that month. The `new` attempt row holds the immutable first learner answer.
-- `data/history/lessons/YYYY-MM-DD.md`: the immutable daily question plan, prepared before the first sentence; it is not evidence of study or recall and contains no answers or hints.
+- `data/history/lessons/YYYY-MM-DD.md`: the immutable daily question plan, except for **Cancel an unassessed plan** below; prepared before the first sentence, it is not evidence of study or recall and contains no answers or hints.
 - `logs/daily_log.md`: one row per completed session.
 - `data/streak.md`: one current snapshot of consecutive completed learning days, rebuilt from `logs/daily_log.md`.
 - `scripts/validate_learning.py`: read-only data checks and rolling weekly metrics; requires Python 3.9 or newer and no third-party packages.
@@ -71,14 +71,22 @@ For `start-english` and any daily-session start, do this before reading learning
 - Do not read older month files in full. Search them by ID only when a review needs a sentence's text or previous answers.
 - If today's session is already recorded as completed in `daily_log.md`, report that it is complete rather than regenerating a lesson or recording another completion.
 - If the learner profile is unset, use the default work-communication context to prepare the lesson without blocking its creation. Offer to fill in the profile later; record only what the learner states.
-- Before creating a new plan, run `python -B scripts/validate_learning.py --date YYYY-MM-DD --report`, adding `--weekend` only when requested, to obtain `review_candidate_ids` and `quota_proposal`. No confirmation is needed for the split. If a plan already exists, reuse its saved mode, counts, and order regardless of the current flag; explain a differing request without rewriting the plan or adding questions. Do not alter an already-started day.
+- Before creating a new plan, run `python -B scripts/validate_learning.py --date YYYY-MM-DD --report`, adding `--weekend` only when requested, to obtain `review_candidate_ids` and `quota_proposal`. No confirmation is needed for the split. If a plan already exists, reuse its saved mode, counts, and order regardless of the current flag unless it is explicitly cancelled under **Cancel an unassessed plan**; a mode flag alone does not authorize cancellation. Explain a differing request without rewriting the plan or adding questions. Do not alter a day with assessed answers.
 - Prepare or reuse today's saved lesson using the rules below. **Resume check:** run `python -B scripts/learning_records.py status --date YYYY-MM-DD`. It reports completed counts against the saved targets and the next unassessed plan row (order, type, sentence ID); read that row's Vietnamese text from the plan file.
 - Follow the saved order and targets: all planned new sentences first, then the planned reviews. Present exactly one Vietnamese sentence at a time and wait for the English response. Do not reveal a model translation, keywords, or hints that undermine recall.
+
+## Cancel an unassessed plan
+
+- Only on the learner's explicit request or confirmation, allow cancellation of today's saved plan before any answer has been assessed. Requesting a different mode alone is not confirmation; never cancel an older day's plan or restart a partially assessed or completed day.
+- Immediately before deletion, run `python -B scripts/learning_records.py status --date YYYY-MM-DD` with today's local date. Proceed only when `ok` is true, `completed` is false, a plan exists, and both `plan.done.new` and `plan.done.review` are zero. If an answer has been assessed but not yet saved, persist it instead of cancelling. Stop on validation errors or conflicting evidence.
+- Remove only `data/history/lessons/YYYY-MM-DD.md` for that date using the host's native file-editing tool. This exception applies only to the question-plan file; never delete or edit assessed attempts, sentence-bank rows, schedules, weak patterns, completion logs, streaks, or other plans to enable cancellation. Do not reset Git or discard other changes.
+- Run `python -B scripts/validate_learning.py --date YYYY-MM-DD` after removal, then rerun `status` and confirm `plan` is null. Report cancellation only after these checks pass.
+- Cancellation does not generate a replacement or start practice. If the learner also explicitly requests a replacement, follow normal preparation with the requested mode and freshly calculated quotas; otherwise wait for their next `start-english` request. IDs reserved only in the cancelled plan are not assessed records.
 
 ## Prepare today's lesson
 
 - Use `data/history/lessons/YYYY-MM-DD.md`, where the date is today's local calendar date. Create the directory if missing. Generate all remaining new questions and select all review questions in one preparation step, save the complete plan, and validate it before presenting the first unassessed sentence.
-- If the plan already exists, reuse it without replacing its questions, IDs, order, or targets. Do not select new questions between attempts. Leave earlier days' plans unchanged.
+- If the plan already exists, reuse it without replacing its questions, IDs, order, or targets unless it has been removed under **Cancel an unassessed plan**. Do not select new questions between attempts. Leave earlier days' plans unchanged.
 - If no plan exists but today's assessed attempts already exist, reconstruct their question rows from the real sentence bank and history first, retaining their IDs and type. Include these completed rows in the targets, then fill only the remaining slots. Do not restart a partially completed day.
 - Reserve unique `S-YYYYMMDD-NNN` IDs for planned new sentences, checking both the sentence bank and existing lesson plans for collisions. A reserved ID does not mean the sentence has been studied. Reuse its exact ID and Vietnamese text when it is later assessed.
 - Choose all new questions using the new-sentence rules below, checking for near-duplicates both in the bank and within the planned batch. The validator rejects an exact repeat of any earlier or planned Vietnamese sentence (ignoring case, punctuation, and spacing); near-duplicates remain your judgment, so search older month files by key words as well. Choose reviews only from real assessed sentences using the review rules below; never from an unassessed draft plan.

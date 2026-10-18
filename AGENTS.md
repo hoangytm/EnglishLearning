@@ -27,7 +27,7 @@ The session flow, resume check, grading, spaced-repetition levels, and data-upda
 
 - One Vietnamese sentence at a time; no answer, keyword, or hint before the learner responds.
 - Never invent learning history, review results, errors, or learner-profile data. Record only what was observed or stated.
-- Never delete or overwrite history: monthly attempt files in `data/history/` are append-only; daily question plans in `data/history/lessons/` and existing rows in `data/sentences/` are immutable. Only `review_schedule.md` rows, `weak_patterns.md` rows, `learner_profile.md` fields, and the `streak.md` snapshot are updated in place.
+- Never delete or overwrite history: monthly attempt files in `data/history/` are append-only; daily question plans in `data/history/lessons/` and existing rows in `data/sentences/` are immutable, except for the explicitly confirmed cancellation of an unassessed current-day plan under the Skill's cancellation procedure. Only `review_schedule.md` rows, `weak_patterns.md` rows, `learner_profile.md` fields, and the `streak.md` snapshot are updated in place.
 - A generated lesson plan is not learning history: save questions without answers or hints, and record study results only after a real learner response has been assessed.
 - Run the Skill's read-only validator at its required checkpoints. Report failures honestly; never modify immutable history or invent results to make validation pass.
 - Write learning records only through `scripts/learning_records.py`; do not hand-edit history, sentence bank, schedule, weak patterns, log, or streak files.
