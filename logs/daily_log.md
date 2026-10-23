@@ -16,3 +16,4 @@ One row per completed session. Append only after all planned questions are done.
 | 2026-10-20 | 5 | 25 | 13 | 2 | 15 | article; preposition; verb-pattern; word-choice; collocation; time-preposition; subject-verb; word-order | 2026-10-20 (1); 2026-10-21 (23) |
 | 2026-10-21 | 3 | 17 | 7 | 0 | 13 | article; preposition; verb-pattern; word-choice; tense-aspect; number-fidelity; time-preposition; subject-verb; word-order | 2026-10-21 (7); 2026-10-22 (17) |
 | 2026-10-22 | 6 | 24 | 10 | 6 | 14 | article; preposition; verb-pattern; word-choice; collocation; tense-aspect; number-fidelity; time-preposition; subject-verb; word-order | 2026-10-23 (18); 2026-10-24 (6) |
+| 2026-10-23 | 3 | 17 | 6 | 4 | 10 | article; preposition; verb-pattern; word-choice; collocation; tense-aspect; subject-verb; word-order | 2026-10-23 (1); 2026-10-24 (16) |
