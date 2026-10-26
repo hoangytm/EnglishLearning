@@ -168,20 +168,21 @@ class LearningValidationTests(unittest.TestCase):
         self.assertEqual(0, report['previous_week']['new']['attempts'])
         self.assertEqual(1, report['current_week']['completed_days'])
 
-    def test_flexible_proposal_shifts_unused_review_slots_to_new(self):
+    def test_default_proposal_reserves_two_new_and_fills_shortages(self):
         row = {'Sentence ID': 'S-20261001-001', 'Next review': '2026-10-10', 'Level': '0', 'Latest result': 'incorrect'}
-        expected = {0: (20, 0), 10: (10, 10), 17: (3, 17), 30: (3, 17)}
+        expected = {0: (20, 0), 10: (10, 10), 17: (3, 17), 18: (2, 18), 30: (2, 18)}
         for count, (new, reviews) in expected.items():
             self.data['schedule'] = [dict(row, **{'Sentence ID': f'S-20261001-{index:03}'}) for index in range(1, count + 1)]
             proposal = progress_report(self.data, TODAY)['quota_proposal']
-            self.assertEqual({'new': new, 'reviews': reviews, 'policy': 'standard-20'}, proposal, count)
+            self.assertEqual({'new': new, 'reviews': reviews, 'policy': 'standard-20-min2'}, proposal, count)
 
-    def test_weekend_proposal_reserves_five_new_and_fills_shortages(self):
+    def test_weekend_proposal_reserves_two_new_and_fills_shortages(self):
         row = {'Next review': '2026-10-10', 'Level': '0', 'Latest result': 'incorrect'}
-        for count, (new, reviews) in {0: (30, 0), 10: (20, 10), 25: (5, 25), 40: (5, 25)}.items():
+        expected = {0: (30, 0), 10: (20, 10), 25: (5, 25), 27: (3, 27), 28: (2, 28), 40: (2, 28)}
+        for count, (new, reviews) in expected.items():
             self.data['schedule'] = [dict(row, **{'Sentence ID': f'S-20261001-{index:03}'}) for index in range(1, count + 1)]
             proposal = progress_report(self.data, TODAY, weekend=True)['quota_proposal']
-            self.assertEqual({'new': new, 'reviews': reviews, 'policy': 'weekend-30'}, proposal, count)
+            self.assertEqual({'new': new, 'reviews': reviews, 'policy': 'weekend-30-min2'}, proposal, count)
 
     def test_new_quota_candidates_include_only_earlier_due_sentences(self):
         self.data['schedule'] = [
@@ -224,7 +225,8 @@ class LearningValidationTests(unittest.TestCase):
         return plan
 
     def test_standard_and_weekend_plans_validate_and_load(self):
-        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25)):
+        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25),
+                                        ('standard-20-min2', 20, 18), ('weekend-30-min2', 30, 28)):
             for older in (0, 10, capacity, 40):
                 self.setUp()
                 self.flexible_day(older, total - min(capacity, older), policy, capacity)
@@ -237,7 +239,8 @@ class LearningValidationTests(unittest.TestCase):
                     self.assertEqual([], validate(loaded, TODAY)[0])
 
     def test_new_policies_reject_wrong_split_or_early_review_selection(self):
-        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25)):
+        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25),
+                                        ('standard-20-min2', 20, 18), ('weekend-30-min2', 30, 28)):
             for offset in (-1, 1):
                 self.setUp()
                 self.flexible_day(40, total - capacity + offset, policy, capacity)
@@ -324,7 +327,7 @@ class LearningValidationTests(unittest.TestCase):
             before = {path: path.read_bytes() for path in root.rglob('*.md')}
             base = [sys.executable, '-B', str(ROOT / 'scripts/validate_learning.py'),
                     '--root', str(root), '--date', str(TODAY), '--report']
-            for flags, total, policy in (([], 20, 'standard-20'), (['--weekend'], 30, 'weekend-30')):
+            for flags, total, policy in (([], 20, 'standard-20-min2'), (['--weekend'], 30, 'weekend-30-min2')):
                 result = subprocess.run(base + flags, capture_output=True, text=True, check=False)
                 self.assertEqual(0, result.returncode, result.stderr + result.stdout)
                 proposal = json.loads(result.stdout)['report']['quota_proposal']

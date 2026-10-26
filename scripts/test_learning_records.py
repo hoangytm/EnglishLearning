@@ -141,7 +141,8 @@ class LearningRecordsTests(unittest.TestCase):
         self.assertEqual(before, snapshot(self.root))
 
     def test_new_quota_sessions_resume_and_complete_with_saved_targets(self):
-        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25)):
+        for policy, total, capacity in (('standard-20', 20, 17), ('weekend-30', 30, 25),
+                                        ('standard-20-min2', 20, 18), ('weekend-30-min2', 30, 28)):
             with self.subTest(policy=policy), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 data = sample_data()

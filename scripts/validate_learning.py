@@ -24,12 +24,14 @@ CATEGORY_NAME = re.compile(r'[a-z]+(-[a-z]+)*')
 DAILY_TOTAL = 17
 MAX_REVIEWS = 14
 FLEXIBLE_POLICY = 'flexible-17'
-DEFAULT_POLICY = 'standard-20'
-WEEKEND_POLICY = 'weekend-30'
+DEFAULT_POLICY = 'standard-20-min2'
+WEEKEND_POLICY = 'weekend-30-min2'
 QUOTA_POLICIES = {
     FLEXIBLE_POLICY: (DAILY_TOTAL, MAX_REVIEWS, 'due-and-weak'),
-    DEFAULT_POLICY: (20, 17, 'due-only'),
-    WEEKEND_POLICY: (30, 25, 'due-only'),
+    'standard-20': (20, 17, 'due-only'),
+    'weekend-30': (30, 25, 'due-only'),
+    DEFAULT_POLICY: (20, 18, 'due-only'),
+    WEEKEND_POLICY: (30, 28, 'due-only'),
 }
 INTERVALS = (1, 3, 7, 14, 30, 60)
 RESULTS = ('correct', 'incorrect', 'uncertain')

@@ -1,6 +1,6 @@
 ---
 name: english-coach
-description: "Prepare a saved Vietnamese-to-English lesson of 20 questions (at least 3 new), or 30 with --weekend (at least 5 new), prioritising due reviews; validate records, practise transfer, and report progress without starting practice."
+description: "Prepare a saved Vietnamese-to-English lesson of 20 questions, or 30 with --weekend, with at least 2 new in either mode and remaining slots prioritising due reviews; validate records, practise transfer, and report progress without starting practice."
 ---
 
 # English Coach
@@ -90,9 +90,9 @@ For `start-english` and any daily-session start, do this before reading learning
 - If no plan exists but today's assessed attempts already exist, reconstruct their question rows from the real sentence bank and history first, retaining their IDs and type. Include these completed rows in the targets, then fill only the remaining slots. Do not restart a partially completed day.
 - Reserve unique `S-YYYYMMDD-NNN` IDs for planned new sentences, checking both the sentence bank and existing lesson plans for collisions. A reserved ID does not mean the sentence has been studied. Reuse its exact ID and Vietnamese text when it is later assessed.
 - Choose all new questions using the new-sentence rules below, checking for near-duplicates both in the bank and within the planned batch. The validator rejects an exact repeat of any earlier or planned Vietnamese sentence (ignoring case, punctuation, and spacing); near-duplicates remain your judgment, so search older month files by key words as well. Choose reviews only from real assessed sentences using the review rules below; never from an unassessed draft plan.
-- Every new default plan has 20 questions: reserve 3 new slots and fill up to 17 review slots from distinct sentences due at the start of the day. `Review target` = min(17, due pool size); `New target` = 20 minus `Review target`; `Unavailable reviews` = 17 minus `Review target`. With enough due sentences, use exactly 3 new and 17 reviews. If reviews are insufficient, their unused slots become new sentences.
-- For an explicitly requested `--weekend` plan, use 30 questions: `Review target` = min(25, due pool size); `New target` = 30 minus `Review target`; `Unavailable reviews` = 25 minus `Review target`. This guarantees at least 5 new (exactly 5 when 25 or more reviews are due). Freeze either mode's targets for this session, even if the schedule later changes after answers.
-- Add `Review selection: due-only` and `Quota policy: standard-20` (default) or `Quota policy: weekend-30` (with the flag) to new plans; use the report's exact split. To reconstruct an already-started day without a plan, keep 7 + 10 and the legacy all-earlier-sentences policy rather than retroactively applying the new rules; leave both optional fields absent and retain its real attempts. Older saved plans (7 + 10, an approved 5 + 12, or `flexible-17` with `due-and-weak`) stay valid and unchanged.
+- Every new default plan has 20 questions: reserve 2 new slots and prioritise distinct sentences due at the start of the day for the remaining 18 slots. `Review target` = min(18, due pool size); `New target` = 20 minus `Review target`; `Unavailable reviews` = 18 minus `Review target`. With enough due sentences, use exactly 2 new and 18 reviews. If reviews are insufficient, their unused slots become new sentences.
+- For an explicitly requested `--weekend` plan, use 30 questions: reserve 2 new slots and prioritise due reviews for the remaining 28 slots. `Review target` = min(28, due pool size); `New target` = 30 minus `Review target`; `Unavailable reviews` = 28 minus `Review target`. This guarantees at least 2 new (exactly 2 when 28 or more reviews are due); any review shortage becomes new sentences. Freeze either mode's targets for this session, even if the schedule later changes after answers.
+- Add `Review selection: due-only` and `Quota policy: standard-20-min2` (default) or `Quota policy: weekend-30-min2` (with the flag) to new plans; use the report's exact split. To reconstruct an already-started day without a plan, keep 7 + 10 and the legacy all-earlier-sentences policy rather than retroactively applying the new rules; leave both optional fields absent and retain its real attempts. Older saved plans (7 + 10, an approved 5 + 12, `flexible-17` with `due-and-weak`, `standard-20`, or `weekend-30`) stay valid and unchanged under their original quotas.
 - Store the date, targets, and an ordered table with columns `Order | Type | Sentence ID | Vietnamese`. Use `new` or `review` for `Type`. Do not store English translations, structures, learner answers, results, or explanations in the plan. Do not show the full question list in chat; only present the current sentence.
 - Run the validator on the saved plan; do not start an invalid or incomplete plan. It checks order, unique IDs, row counts, new-before-review order, review eligibility, and that reconstructed rows match the existing history.
 - Preparation alone must not add learning records or increase the streak. Only assessed answers trigger learning-data updates.
@@ -103,11 +103,11 @@ Plan format (placeholders below describe the schema, not learning records):
 # Lesson YYYY-MM-DD
 
 - Lesson date: YYYY-MM-DD
-- New target: <total minus review target; at least 3, or 5 with --weekend>
-- Review target: <due pool capped at 17, or 25 with --weekend>
+- New target: <total minus review target; at least 2 in either mode>
+- Review target: <due pool capped at 18, or 28 with --weekend>
 - Unavailable reviews: <review capacity minus review target>
 - Review selection: due-only
-- Quota policy: <standard-20 or weekend-30>
+- Quota policy: <standard-20-min2 or weekend-30-min2>
 
 | Order | Type | Sentence ID | Vietnamese |
 | --- | --- | --- | --- |
@@ -131,7 +131,7 @@ Plan format (placeholders below describe the schema, not learning records):
 - Eligible: sentences whose ID date is before today. Never present a current-session new item as a review.
 - Review each sentence at most once per daily session. On resume, skip sentence IDs already assessed as reviews today; those attempts count toward the planned review target.
 - For new plans, select all due items first: `Next review` on or before the lesson date, oldest date first, then lowest level; recurring weak patterns can break further ties. Do not skip a due sentence merely because it was studied yesterday.
-- For new plans, select only sentences whose `Next review` is on or before the lesson date. Do not fill review slots with not-yet-due sentences, even if their level is 0 or 1 or their latest result is `incorrect`/`uncertain`. If fewer than 17 (default) or 25 (`--weekend`) are due, save the reduced review target and turn the shortage into new sentences. Use the state before today's attempts when reconstructing targets. Resume older saved plans under their original selection policy.
+- For new plans, select only sentences whose `Next review` is on or before the lesson date. Do not fill review slots with not-yet-due sentences, even if their level is 0 or 1 or their latest result is `incorrect`/`uncertain`. If fewer than 18 (default) or 28 (`--weekend`) are due, save the reduced review target and turn the shortage into new sentences. Use the state before today's attempts when reconstructing targets. Resume older saved plans under their original selection policy.
 - Get the Vietnamese text and standard version from the sentence's month file by searching its ID. Copy only the Vietnamese text into the plan; retrieve the standard version for feedback after the learner answers.
 - Review every planned distinct row, tell the learner how many review slots became new sentences (`Unavailable reviews`), and do not manufacture records or repeat sentences to fill the quota.
 
