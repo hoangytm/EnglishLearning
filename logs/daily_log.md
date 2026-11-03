@@ -27,3 +27,4 @@ One row per completed session. Append only after all planned questions are done.
 | 2026-10-31 | 2 | 28 | 14 | 4 | 12 | article; preposition; word-choice; tense-aspect; number-fidelity; time-preposition | 2026-10-31 (1); 2026-11-01 (26) |
 | 2026-11-01 | 3 | 27 | 21 | 2 | 7 | article; preposition; verb-pattern; word-choice; tense-aspect; time-preposition | 2026-11-02 (16); 2026-11-03 (21) |
 | 2026-11-02 | 4 | 16 | 13 | 1 | 6 | article; preposition; verb-pattern; word-choice; tense-aspect; word-order | 2026-11-03 (27); 2026-11-04 (13) |
+| 2026-11-03 | 2 | 18 | 12 | 0 | 8 | article; verb-pattern; word-choice; A-20261103-019: correct answer saved incorrect, retained with learner approval | 2026-11-03 (9); 2026-11-04 (21) |
