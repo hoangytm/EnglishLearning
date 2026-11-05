@@ -4,4 +4,4 @@ One current snapshot, updated in place from completed-session dates in `logs/dai
 
 | Current streak | Best streak | Last completed |
 | --- | --- | --- |
-| 25 | 25 | 2026-11-04 |
+| 26 | 26 | 2026-11-05 |
