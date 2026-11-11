@@ -4,27 +4,9 @@ One row per `sentence_id`, sorted by `Next review` then ID, so due items are alw
 
 | Sentence ID | Level | Status | Latest result | Last studied | Next review | Correct | Incorrect | Uncertain | Reviews |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| S-20261011-004 | 3 | reviewing | correct | 2026-10-27 | 2026-11-10 | 3 | 1 | 0 | 3 |
-| S-20261011-014 | 3 | reviewing | correct | 2026-10-27 | 2026-11-10 | 3 | 1 | 0 | 3 |
-| S-20261013-001 | 3 | reviewing | correct | 2026-10-27 | 2026-11-10 | 2 | 6 | 0 | 7 |
-| S-20261018-008 | 3 | reviewing | correct | 2026-10-27 | 2026-11-10 | 2 | 1 | 0 | 2 |
-| S-20261022-003 | 2 | reviewing | correct | 2026-11-03 | 2026-11-10 | 1 | 4 | 2 | 6 |
-| S-20261026-002 | 2 | reviewing | correct | 2026-11-03 | 2026-11-10 | 1 | 1 | 2 | 3 |
-| S-20261028-001 | 2 | reviewing | correct | 2026-11-03 | 2026-11-10 | 1 | 2 | 1 | 3 |
-| S-20261029-001 | 2 | reviewing | correct | 2026-11-03 | 2026-11-10 | 1 | 4 | 0 | 4 |
-| S-20261031-002 | 2 | reviewing | correct | 2026-11-03 | 2026-11-10 | 1 | 0 | 1 | 1 |
-| S-20261101-002 | 2 | reviewing | correct | 2026-11-03 | 2026-11-10 | 1 | 2 | 0 | 2 |
-| S-20261103-001 | 2 | reviewing | correct | 2026-11-03 | 2026-11-10 | 1 | 0 | 0 | 0 |
-| S-20261108-006 | 0 | learning | incorrect | 2026-11-09 | 2026-11-10 | 0 | 2 | 0 | 1 |
-| S-20261108-008 | 0 | learning | incorrect | 2026-11-09 | 2026-11-10 | 0 | 2 | 0 | 1 |
-| S-20261108-009 | 0 | learning | incorrect | 2026-11-09 | 2026-11-10 | 0 | 2 | 0 | 1 |
-| S-20261109-001 | 0 | learning | incorrect | 2026-11-09 | 2026-11-10 | 0 | 1 | 0 | 0 |
-| S-20261109-002 | 0 | learning | incorrect | 2026-11-09 | 2026-11-10 | 0 | 1 | 0 | 0 |
 | S-20261011-005 | 3 | reviewing | correct | 2026-10-28 | 2026-11-11 | 3 | 2 | 0 | 4 |
 | S-20261011-007 | 2 | reviewing | correct | 2026-11-04 | 2026-11-11 | 3 | 2 | 0 | 4 |
 | S-20261013-004 | 3 | reviewing | correct | 2026-10-28 | 2026-11-11 | 2 | 1 | 4 | 6 |
-| S-20261016-004 | 0 | learning | incorrect | 2026-11-10 | 2026-11-11 | 2 | 2 | 0 | 3 |
-| S-20261020-005 | 0 | learning | incorrect | 2026-11-10 | 2026-11-11 | 2 | 6 | 0 | 7 |
 | S-20261024-012 | 2 | reviewing | correct | 2026-11-04 | 2026-11-11 | 2 | 3 | 0 | 4 |
 | S-20261025-003 | 2 | reviewing | correct | 2026-11-04 | 2026-11-11 | 2 | 2 | 0 | 3 |
 | S-20261025-005 | 0 | learning | incorrect | 2026-11-10 | 2026-11-11 | 1 | 4 | 1 | 5 |
@@ -46,12 +28,19 @@ One row per `sentence_id`, sorted by `Next review` then ID, so due items are alw
 | S-20261015-003 | 2 | reviewing | correct | 2026-11-05 | 2026-11-12 | 2 | 3 | 3 | 7 |
 | S-20261016-002 | 3 | reviewing | correct | 2026-10-29 | 2026-11-12 | 2 | 2 | 1 | 4 |
 | S-20261018-001 | 3 | reviewing | correct | 2026-10-29 | 2026-11-12 | 2 | 3 | 0 | 4 |
+| S-20261018-008 | 0 | learning | incorrect | 2026-11-11 | 2026-11-12 | 2 | 2 | 0 | 3 |
 | S-20261019-001 | 3 | reviewing | correct | 2026-10-29 | 2026-11-12 | 2 | 2 | 0 | 3 |
+| S-20261020-005 | 0 | learning | incorrect | 2026-11-11 | 2026-11-12 | 2 | 7 | 0 | 8 |
 | S-20261022-005 | 1 | learning | uncertain | 2026-11-09 | 2026-11-12 | 0 | 7 | 4 | 10 |
+| S-20261026-002 | 0 | learning | incorrect | 2026-11-11 | 2026-11-12 | 1 | 2 | 2 | 4 |
+| S-20261029-001 | 0 | learning | incorrect | 2026-11-11 | 2026-11-12 | 1 | 5 | 0 | 5 |
 | S-20261101-003 | 2 | reviewing | correct | 2026-11-05 | 2026-11-12 | 1 | 0 | 1 | 1 |
 | S-20261102-002 | 2 | reviewing | correct | 2026-11-05 | 2026-11-12 | 1 | 3 | 0 | 3 |
 | S-20261107-002 | 1 | learning | uncertain | 2026-11-09 | 2026-11-12 | 0 | 2 | 1 | 2 |
 | S-20261108-004 | 1 | learning | uncertain | 2026-11-09 | 2026-11-12 | 0 | 1 | 1 | 1 |
+| S-20261109-002 | 0 | learning | incorrect | 2026-11-11 | 2026-11-12 | 0 | 2 | 0 | 1 |
+| S-20261111-001 | 0 | learning | incorrect | 2026-11-11 | 2026-11-12 | 0 | 1 | 0 | 0 |
+| S-20261111-002 | 0 | learning | incorrect | 2026-11-11 | 2026-11-12 | 0 | 1 | 0 | 0 |
 | S-20261012-009 | 3 | reviewing | correct | 2026-10-30 | 2026-11-13 | 3 | 2 | 0 | 4 |
 | S-20261017-002 | 3 | reviewing | correct | 2026-10-30 | 2026-11-13 | 2 | 5 | 0 | 6 |
 | S-20261020-004 | 3 | reviewing | correct | 2026-10-30 | 2026-11-13 | 2 | 1 | 0 | 2 |
@@ -71,6 +60,7 @@ One row per `sentence_id`, sorted by `Next review` then ID, so due items are alw
 | S-20261024-001 | 3 | reviewing | correct | 2026-10-31 | 2026-11-14 | 2 | 0 | 0 | 1 |
 | S-20261106-001 | 2 | reviewing | correct | 2026-11-07 | 2026-11-14 | 1 | 1 | 0 | 1 |
 | S-20261106-002 | 2 | reviewing | correct | 2026-11-07 | 2026-11-14 | 1 | 1 | 0 | 1 |
+| S-20261109-001 | 1 | learning | uncertain | 2026-11-11 | 2026-11-14 | 0 | 1 | 1 | 1 |
 | S-20261013-003 | 3 | reviewing | correct | 2026-11-01 | 2026-11-15 | 3 | 5 | 0 | 7 |
 | S-20261014-003 | 3 | reviewing | correct | 2026-11-01 | 2026-11-15 | 3 | 1 | 1 | 4 |
 | S-20261015-001 | 3 | reviewing | correct | 2026-11-01 | 2026-11-15 | 3 | 3 | 0 | 5 |
@@ -99,6 +89,10 @@ One row per `sentence_id`, sorted by `Next review` then ID, so due items are alw
 | S-20261024-011 | 3 | reviewing | correct | 2026-11-03 | 2026-11-17 | 2 | 2 | 0 | 3 |
 | S-20261029-002 | 2 | reviewing | correct | 2026-11-10 | 2026-11-17 | 2 | 4 | 0 | 5 |
 | S-20261110-002 | 2 | reviewing | correct | 2026-11-10 | 2026-11-17 | 1 | 0 | 0 | 0 |
+| S-20261016-004 | 2 | reviewing | correct | 2026-11-11 | 2026-11-18 | 3 | 2 | 0 | 4 |
+| S-20261108-006 | 2 | reviewing | correct | 2026-11-11 | 2026-11-18 | 1 | 2 | 0 | 2 |
+| S-20261108-008 | 2 | reviewing | correct | 2026-11-11 | 2026-11-18 | 1 | 2 | 0 | 2 |
+| S-20261108-009 | 2 | reviewing | correct | 2026-11-11 | 2026-11-18 | 1 | 2 | 0 | 2 |
 | S-20261016-001 | 3 | reviewing | correct | 2026-11-05 | 2026-11-19 | 3 | 3 | 0 | 5 |
 | S-20261018-009 | 3 | reviewing | correct | 2026-11-05 | 2026-11-19 | 3 | 1 | 0 | 3 |
 | S-20261023-003 | 3 | reviewing | correct | 2026-11-05 | 2026-11-19 | 2 | 1 | 1 | 3 |
@@ -127,6 +121,11 @@ One row per `sentence_id`, sorted by `Next review` then ID, so due items are alw
 | S-20261019-003 | 3 | reviewing | correct | 2026-11-10 | 2026-11-24 | 3 | 2 | 1 | 5 |
 | S-20261025-002 | 3 | reviewing | correct | 2026-11-10 | 2026-11-24 | 2 | 5 | 0 | 6 |
 | S-20261102-003 | 3 | reviewing | correct | 2026-11-10 | 2026-11-24 | 2 | 0 | 0 | 1 |
+| S-20261022-003 | 3 | reviewing | correct | 2026-11-11 | 2026-11-25 | 2 | 4 | 2 | 7 |
+| S-20261028-001 | 3 | reviewing | correct | 2026-11-11 | 2026-11-25 | 2 | 2 | 1 | 4 |
+| S-20261031-002 | 3 | reviewing | correct | 2026-11-11 | 2026-11-25 | 2 | 0 | 1 | 2 |
+| S-20261101-002 | 3 | reviewing | correct | 2026-11-11 | 2026-11-25 | 2 | 2 | 0 | 3 |
+| S-20261103-001 | 3 | reviewing | correct | 2026-11-11 | 2026-11-25 | 2 | 0 | 0 | 1 |
 | S-20261011-003 | 4 | mastered | correct | 2026-11-01 | 2026-12-01 | 3 | 0 | 0 | 2 |
 | S-20261011-011 | 4 | mastered | correct | 2026-11-01 | 2026-12-01 | 3 | 0 | 0 | 2 |
 | S-20261011-012 | 4 | mastered | correct | 2026-11-01 | 2026-12-01 | 3 | 0 | 0 | 2 |
@@ -150,3 +149,6 @@ One row per `sentence_id`, sorted by `Next review` then ID, so due items are alw
 | S-20261013-008 | 4 | mastered | correct | 2026-11-07 | 2026-12-07 | 3 | 2 | 1 | 5 |
 | S-20261013-006 | 4 | mastered | correct | 2026-11-08 | 2026-12-08 | 3 | 4 | 0 | 6 |
 | S-20261014-004 | 4 | mastered | correct | 2026-11-08 | 2026-12-08 | 3 | 3 | 0 | 5 |
+| S-20261011-004 | 4 | mastered | correct | 2026-11-11 | 2026-12-11 | 4 | 1 | 0 | 4 |
+| S-20261011-014 | 4 | mastered | correct | 2026-11-11 | 2026-12-11 | 4 | 1 | 0 | 4 |
+| S-20261013-001 | 4 | mastered | correct | 2026-11-11 | 2026-12-11 | 3 | 6 | 0 | 8 |
