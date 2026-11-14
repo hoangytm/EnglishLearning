@@ -12,7 +12,9 @@ Before the first sentence, the assistant prepares and saves the complete questio
 
 After each sentence, you receive a natural translation, a detailed comparison, a distinction between errors and merely less-natural wording, and examples where useful. The result is saved for future sessions.
 
-When earlier errors exist, 1-2 new slots test a previously learned structure in a fresh context. These are new attempts, not reviews of the original sentence. Their source links are saved only after assessment in an optional second table in the sentence bank; old sentence rows are not rewritten.
+New questions favour the least-used agreed topics from the preceding 14 days, cover distinct topics before repeating one, and balance work with daily life when both are in the profile. They must vary real-life situations, communicative purposes, and sentence frames, not merely replace a few words in an old prompt. Preparation includes a semantic diversity check against recent sentence-bank entries, saved plans, and the new batch; the script validator checks exact duplicates and record consistency, not semantic diversity.
+
+When earlier errors exist, at most half the new slots, capped at 2, test a previously learned structure in a genuinely different situation and communicative purpose. With 2 new questions, at most 1 is transfer practice; the other explores a fresh situation and a different main structure. A transfer source is not reused within 14 days. These are new attempts, not reviews of the original sentence. Their source links are saved only after assessment in an optional second table in the sentence bank; old sentence rows are not rewritten. These preparation rules apply only to future plans, not existing saved lessons or due reviews.
 
 ## Copilot and Codex
 

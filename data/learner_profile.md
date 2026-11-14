@@ -17,3 +17,4 @@ Record only what the learner states. Keep `not set` until the learner provides a
   9. Health, food, and eating out (restaurants, doctor, pharmacy)
   10. Experiences, plans, and opinions (past events, weekend plans, hobbies, telling a story with correct tenses)
 - Notes: Prefers detailed explanations of mistakes and natural native-speaker phrasing before moving to the next sentence. Wants teacher-style explanations of grammar and word choice with several examples. Continues to the next sentence by typing only `1`.
+- Question preferences: Wants new questions to cover varied topics and useful real-life situations, without repetitive sentence templates disguised by small wording changes.
