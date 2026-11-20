@@ -44,3 +44,4 @@ One row per completed session. Append only after all planned questions are done.
 | 2026-11-17 | 2 | 18 | 11 | 2 | 7 | preposition; verb-pattern; word-choice; collocation; tense-aspect; time-preposition; word-order | 2026-11-17 (15); 2026-11-18 (12) |
 | 2026-11-18 | 2 | 18 | 12 | 1 | 7 | preposition; verb-pattern; word-choice; number-fidelity | 2026-11-18 (9); 2026-11-19 (19) |
 | 2026-11-19 | 2 | 18 | 12 | 1 | 7 | article; verb-pattern; word-choice; number-fidelity; word-order; A-20261119-017: graded too strictly; feedback revised to uncertain; stored incorrect retained | 2026-11-19 (10); 2026-11-20 (17) |
+| 2026-11-20 | 2 | 18 | 11 | 2 | 7 | article; preposition; verb-pattern; word-choice; tense-aspect; number-fidelity; time-preposition; word-order | 2026-11-20 (9); 2026-11-21 (23) |
