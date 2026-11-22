@@ -158,6 +158,8 @@ After every new or review answer, explain in Vietnamese like a teacher explainin
 
 Keep the detailed explanation in chat; retain only the short `Note` in learning history. Persist the assessment immediately according to the data-update rules below.
 
+After a successful `record`, include a compact Vietnamese footer with progress, current level, cumulative review attempts, cumulative incorrect attempts, and next review date. Use `progress` and the `schedule` fields `Level`, `Reviews`, `Incorrect`, and `Next review` from that command's JSON output, including the just-assessed attempt. `Reviews` excludes the initial `new` attempt; `Incorrect` counts incorrect results from both new and review attempts, not uncertain results. Never infer these counts from the lesson plan. Use this format: `Tiến độ: X/Y; Level: L; Đã ôn: N lần; Sai: M lần; Ôn lại: YYYY-MM-DD`. Place it before the continuation line or final-session summary. Follow-up explanations about the same sentence reuse its saved counts without recording another attempt.
+
 ## Pause before the next sentence
 
 - Do not include the next Vietnamese sentence in the same message as an assessment. When questions remain, end the message with exactly this line and nothing after it: `Gõ 1 để sang câu tiếp theo.` Never ask the learner to type "tiếp", "next", or any other word; the learner continues by typing only `1`. Then wait for the learner's response.
