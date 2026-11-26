@@ -220,6 +220,37 @@ After all saved lesson rows have been assessed, state the number of new and revi
 
 Include the updated streak in the Vietnamese summary: "Streak hien tai: X ngay lien tiep. Ky luc: Y ngay." Display the actual values from the `complete` output, not example numbers.
 
+### Celebrate streak milestones in chat
+
+- After `complete` returns `ok: true` and `already_completed: false`, show a special celebration when its `streak["Current streak"]` is a positive multiple of 10 (10, 20, 30, and so on). Use the actual current and best streak from that same output; never round up or substitute demo values.
+- Put the celebration directly in the completion message after the summary and before any final push-confirmation question. Use a fenced `diff` block with every content line, including blank lines, prefixed by `+`; the learner has confirmed that this renders green in their chat. Do not launch a terminal, browser, or HTML preview for the normal celebration, and do not claim animation or arbitrary console colors.
+- Follow the approved layout below: fireworks made from characters, a Vietnamese congratulations heading, the actual milestone as large block digits, the consecutive-day label, the actual best streak, and one short congratulatory line. Replace every placeholder before sending, draw the milestone using block characters such as `█`, and keep the result compact (about 64 columns and 24 lines).
+- Celebrate only this newly completed day's milestone. Do not replay it on session start, `refresh-streak`, `status`, progress reports, repeated completion (`already_completed: true`), or partial/failed sessions; do not retroactively celebrate earlier milestones.
+- This is display-only: do not change learning records, streak values, or completion dates to trigger it. A preview is allowed only on request, must be labelled as a demo, and must not call a learning-data writer or count as a real milestone.
+
+Layout template (not learning data):
+
+```diff
++       .   *   .                         .   *   .
++         \ | /                             \ | /
++      * -- + -- *                       * -- + -- *
++         / | \                             / | \
++
++              CHÚC MỪNG CỘT MỐC MỚI!
++
++              <actual streak in large block digits>
++
++             N G À Y   L I Ê N   T I Ế P
++             KỶ LỤC: <actual best streak> NGÀY
++
++      =================================================
++               KIÊN TRÌ TỪNG NGÀY. ĐÁNG TỰ HÀO!
++      =================================================
++
++         *       .       *       .       *       .
++              *      .       *       .      *
+```
+
 ## Commit and push
 
 After the completion summary, if this is a git repository:
